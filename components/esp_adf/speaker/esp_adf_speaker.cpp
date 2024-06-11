@@ -25,6 +25,16 @@ static const size_t BUFFER_COUNT = 50;
 
 static const char *const TAG = "esp_adf.speaker";
 
+void ESPADFSpeaker::set_volume(int volume) {
+    ESP_LOGI(TAG, "Setting volume to %d", volume);
+    
+    audio_board_handle_t board_handle = audio_board_init();
+    esp_err_t err = audio_hal_set_volume(board_handle->audio_hal, volume);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error setting volume: %s", esp_err_to_name(err));
+    }
+}
+
 void ESPADFSpeaker::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ESP ADF Speaker...");
 
