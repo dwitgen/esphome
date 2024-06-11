@@ -31,6 +31,9 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
 
   bool has_buffered_data() const override;
 
+  // Declare the set_volume method
+  void set_volume(int volume);
+
   protected:
   void start_();
   void watch_();
