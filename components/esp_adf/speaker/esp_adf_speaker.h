@@ -13,8 +13,6 @@
 #include "esphome/components/speaker/speaker.h"
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
-// added to try control volume
-#include "esphome/components/esp_adf/esp_adf_pipeline.h"
 
 #include <audio_element.h>
 #include <audio_pipeline.h>
