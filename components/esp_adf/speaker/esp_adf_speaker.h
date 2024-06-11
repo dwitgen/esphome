@@ -3,9 +3,6 @@
 #ifdef USE_ESP_IDF
 
 #include "../esp_adf.h"
-// added to try control volume
-#ifndef ESPHOME_COMPONENTS_ESP_ADF_SPEAKER_ESP_ADF_SPEAKER_H
-#define ESPHOME_COMPONENTS_ESP_ADF_SPEAKER_ESP_ADF_SPEAKER_H
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
@@ -34,10 +31,7 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
 
   bool has_buffered_data() const override;
 
-  // Declare the set_volume method
-  void set_volume(int volume);
-
- protected:
+  protected:
   void start_();
   void watch_();
 
