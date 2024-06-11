@@ -72,6 +72,8 @@ void ESPADFSpeaker::setup() {
     return;
   }
 
+// Set initial volume
+this->set_volume(50); // Set initial volume to 50%
   
 }
 
