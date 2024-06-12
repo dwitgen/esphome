@@ -29,7 +29,7 @@ static const char *const TAG = "esp_adf.speaker";
 // Define ADC configuration
 #define ADC_WIDTH_BIT    ADC_WIDTH_BIT_12
 #define ADC_ATTEN        ADC_ATTEN_DB_11
-#define ADC_CHANNEL      ADC2_CHANNEL_0  // GPIO 8
+#define ADC_CHANNEL      ADC1_CHANNEL_7  // GPIO 8
 
 // Define thresholds for button detection in ADC values
 #define VOL_UP_THRESHOLD_LOW     807
