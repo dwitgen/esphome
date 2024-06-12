@@ -106,9 +106,9 @@ void ESPADFSpeaker::setup() {
     return;
   }
 
-// Set initial volume
-this->set_volume(volume_); // Set initial volume to 50%
- // Configure ADC
+    // Set initial volume
+    this->set_volume(volume_); // Set initial volume to 50%
+    // Configure ADC
     adc2_config_channel_atten(ADC_CHANNEL, ADC_ATTEN);
 }
 
@@ -337,11 +337,11 @@ void ESPADFSpeaker::loop() {
         ESP_LOGE(TAG, "ADC read error");
         return;
     }
-    
+
     // Determine button press based on ADC value
-    if (adc_value < VOL_UP_THRESHOLD) {
+    if (adc_value >= VOL_UP_THRESHOLD_LOW && adc_value <= VOL_UP_THRESHOLD_HIGH) {
         this->volume_up();
-    } else if (adc_value < VOL_DOWN_THRESHOLD) {
+    } else if (adc_value >= VOL_DOWN_THRESHOLD_LOW && adc_value <= VOL_DOWN_THRESHOLD_HIGH) {
         this->volume_down();
     }
 }
