@@ -27,12 +27,34 @@ static const char *const TAG = "esp_adf.speaker";
 
 void ESPADFSpeaker::set_volume(int volume) {
     ESP_LOGI(TAG, "Setting volume to %d", volume);
+
+    // Ensure the volume is within the range 0-100
+    if (volume < 0) volume = 0;
+    if (volume > 100) volume = 100;
+    this->volume_ = volume;
+
+    // Update the volume sensor
+    if (this->volume_sensor != nullptr) {
+        this->volume_sensor->publish_state(this->volume_);
+    }
+
+    // Set volume using HAL
     
     audio_board_handle_t board_handle = audio_board_init();
     esp_err_t err = audio_hal_set_volume(board_handle->audio_hal, volume);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error setting volume: %s", esp_err_to_name(err));
     }
+}
+
+void ESPADFSpeaker::volume_up() {
+    ESP_LOGI(TAG, "Volume up button pressed");
+    this->set_volume(this->volume_ + 10);
+}
+
+void ESPADFSpeaker::volume_down() {
+    ESP_LOGI(TAG, "Volume down button pressed");
+    this->set_volume(this->volume_ - 10);
 }
 
 void ESPADFSpeaker::setup() {
@@ -73,7 +95,7 @@ void ESPADFSpeaker::setup() {
   }
 
 // Set initial volume
-this->set_volume(10); // Set initial volume to 50%
+this->set_volume(volume_); // Set initial volume to 50%
   
 }
 
