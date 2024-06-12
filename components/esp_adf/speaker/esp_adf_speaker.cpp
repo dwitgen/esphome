@@ -4,6 +4,8 @@
 
 #include <driver/i2s.h>
 #include <driver/gpio.h>
+#include <driver/adc.h>
+#include <esp_adc_cal.h>
 
 #include "esphome/core/application.h"
 #include "esphome/core/hal.h"
@@ -22,8 +24,18 @@ namespace esphome {
 namespace esp_adf {
 
 static const size_t BUFFER_COUNT = 50;
-
 static const char *const TAG = "esp_adf.speaker";
+
+// Define ADC configuration
+#define ADC_WIDTH_BIT    ADC_WIDTH_BIT_12
+#define ADC_ATTEN        ADC_ATTEN_DB_11
+#define ADC_CHANNEL      ADC2_CHANNEL_0  // GPIO 8
+
+// Define thresholds for button detection in ADC values
+#define VOL_UP_THRESHOLD_LOW     807
+#define VOL_UP_THRESHOLD_HIGH    1142
+#define VOL_DOWN_THRESHOLD_LOW   1266
+#define VOL_DOWN_THRESHOLD_HIGH  1650
 
 void ESPADFSpeaker::set_volume(int volume) {
     ESP_LOGI(TAG, "Setting volume to %d", volume);
@@ -96,7 +108,8 @@ void ESPADFSpeaker::setup() {
 
 // Set initial volume
 this->set_volume(volume_); // Set initial volume to 50%
-  
+ // Configure ADC
+    adc2_config_channel_atten(ADC_CHANNEL, ADC_ATTEN);
 }
 
 void ESPADFSpeaker::start() { this->state_ = speaker::STATE_STARTING; }
@@ -318,6 +331,19 @@ void ESPADFSpeaker::loop() {
     case speaker::STATE_STOPPED:
       break;
   }
+    // Read ADC value
+    int adc_value = 0;
+    if (adc2_get_raw(ADC_CHANNEL, ADC_WIDTH_BIT, &adc_value) != ESP_OK) {
+        ESP_LOGE(TAG, "ADC read error");
+        return;
+    }
+    
+    // Determine button press based on ADC value
+    if (adc_value < VOL_UP_THRESHOLD) {
+        this->volume_up();
+    } else if (adc_value < VOL_DOWN_THRESHOLD) {
+        this->volume_down();
+    }
 }
 
 size_t ESPADFSpeaker::play(const uint8_t *data, size_t length) {
