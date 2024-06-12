@@ -10,6 +10,7 @@
 #include "esphome/components/speaker/speaker.h"
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
+#include "esphome/components/sensor/sensor.h"
 
 #include <audio_element.h>
 #include <audio_pipeline.h>
@@ -32,7 +33,16 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
   bool has_buffered_data() const override;
 
   // Declare the set_volume method
+  //void set_volume(int volume);
+
+  // Declare methods for volume control
   void set_volume(int volume);
+  void volume_up();
+  void volume_down();
+  int get_volume() const { return volume_; }
+
+  // Declare a sensor for volume level
+  sensor::Sensor *volume_sensor = nullptr;
 
   protected:
   void start_();
@@ -46,6 +56,8 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
     uint8_t *storage;
   } buffer_queue_;
   QueueHandle_t event_queue_;
+  private:
+  int volume_ = 50;  // Default volume level
 };
 
 }  // namespace esp_adf
