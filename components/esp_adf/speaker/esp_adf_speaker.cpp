@@ -109,7 +109,7 @@ void ESPADFSpeaker::setup() {
     // Set initial volume
     this->set_volume(volume_); // Set initial volume to 50%
     // Configure ADC
-    adc2_config_channel_atten(ADC_CHANNEL, ADC_ATTEN);
+    adc1_config_channel_atten(ADC_CHANNEL, ADC_ATTEN);
 }
 
 void ESPADFSpeaker::start() { this->state_ = speaker::STATE_STARTING; }
@@ -333,7 +333,7 @@ void ESPADFSpeaker::loop() {
   }
     // Read ADC value
     int adc_value = 0;
-    if (adc2_get_raw(ADC_CHANNEL, ADC_WIDTH_BIT, &adc_value) != ESP_OK) {
+    if (adc1_get_raw(ADC_CHANNEL, ADC_WIDTH_BIT, &adc_value) != ESP_OK) {
         ESP_LOGE(TAG, "ADC read error");
         return;
     }
