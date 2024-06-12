@@ -28,7 +28,7 @@ static const char *const TAG = "esp_adf.speaker";
 
 // Define ADC configuration
 #define ADC_WIDTH_BIT    ADC_WIDTH_BIT_12
-#define ADC_ATTEN        ADC_ATTEN_DB_11
+#define ADC_ATTEN        ADC_ATTEN_DB_12
 #define ADC_CHANNEL      ADC1_CHANNEL_7  // GPIO 8
 
 // Define thresholds for button detection in ADC values
@@ -109,6 +109,7 @@ void ESPADFSpeaker::setup() {
     // Set initial volume
     this->set_volume(volume_); // Set initial volume to 50%
     // Configure ADC
+    adc1_config_width(ADC_WIDTH_BIT);
     adc1_config_channel_atten(ADC_CHANNEL, ADC_ATTEN);
 }
 
@@ -332,8 +333,8 @@ void ESPADFSpeaker::loop() {
       break;
   }
     // Read ADC value
-    int adc_value = 0;
-    if (adc1_get_raw(ADC_CHANNEL, ADC_WIDTH_BIT, &adc_value) != ESP_OK) {
+    int adc_value = adc1_get_raw(ADC_CHANNEL);
+    if (adc_value < 0) {
         ESP_LOGE(TAG, "ADC read error");
         return;
     }
