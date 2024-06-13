@@ -342,7 +342,7 @@ void ESPADFSpeaker::loop() {
         return;
     }
 
-    ESP_LOGD(TAG, "ADC value: %d", adc_value);
+    //ESP_LOGD(TAG, "ADC value: %d", adc_value);
     
     // Determine button press based on ADC value
     if (adc_value >= VOL_UP_THRESHOLD_LOW && adc_value <= VOL_UP_THRESHOLD_HIGH) {
