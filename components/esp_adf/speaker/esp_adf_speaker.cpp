@@ -29,13 +29,13 @@ static const char *const TAG = "esp_adf.speaker";
 // Define ADC configuration
 #define ADC_WIDTH_BIT    ADC_WIDTH_BIT_12
 #define ADC_ATTEN        ADC_ATTEN_DB_12
-#define ADC_CHANNEL      ADC1_CHANNEL_7  // GPIO 8
+//#define ADC_CHANNEL      ADC1_CHANNEL_7  // GPIO 8
 
 // Define thresholds for button detection in ADC values
-#define VOL_UP_THRESHOLD_LOW     420
-#define VOL_UP_THRESHOLD_HIGH    520
-#define VOL_DOWN_THRESHOLD_LOW   950
-#define VOL_DOWN_THRESHOLD_HIGH  1000
+//#define VOL_UP_THRESHOLD_LOW     420
+//#define VOL_UP_THRESHOLD_HIGH    520
+//#define VOL_DOWN_THRESHOLD_LOW   950
+//#define VOL_DOWN_THRESHOLD_HIGH  1000
 
 void ESPADFSpeaker::set_volume(int volume) {
     ESP_LOGI(TAG, "Setting volume to %d", volume);
@@ -75,6 +75,7 @@ void ESPADFSpeaker::setup() {
   #ifdef USE_ESP_ADF_BOARD
   // Use the PA enable pin from board configuration
   gpio_num_t pa_enable_gpio = static_cast<gpio_num_t>(get_pa_enable_gpio());
+  int but_channel = INPUT_BUTOP_ID;
   #endif
 
   gpio_config_t io_conf;
@@ -108,9 +109,11 @@ void ESPADFSpeaker::setup() {
 
     // Set initial volume
     this->set_volume(volume_); // Set initial volume to 50%
-    // Configure ADC
+
+    // Configure ADC for volume control
     adc1_config_width(ADC_WIDTH_BIT);
-    adc1_config_channel_atten(ADC_CHANNEL, ADC_ATTEN);
+    adc1_config_channel_atten((adc1_channel_t)but_channel, ADC_ATTEN);
+   
 }
 
 void ESPADFSpeaker::start() { this->state_ = speaker::STATE_STARTING; }
@@ -332,13 +335,15 @@ void ESPADFSpeaker::loop() {
     case speaker::STATE_STOPPED:
       break;
   }
-    // Read ADC value
-    int adc_value = adc1_get_raw(ADC_CHANNEL);
+   // Read ADC value for button control
+    int adc_value = adc1_get_raw((adc1_channel_t)INPUT_BUTOP_ID);
     if (adc_value < 0) {
         ESP_LOGE(TAG, "ADC read error");
         return;
     }
 
+    ESP_LOGD(TAG, "ADC value: %d", adc_value);
+    
     // Determine button press based on ADC value
     if (adc_value >= VOL_UP_THRESHOLD_LOW && adc_value <= VOL_UP_THRESHOLD_HIGH) {
         ESP_LOGI(TAG, "Volume up detected");
