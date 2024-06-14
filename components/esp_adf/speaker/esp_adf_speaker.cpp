@@ -102,9 +102,10 @@ void ESPADFSpeaker::setup() {
     return;
   }
 
-  // Initialize the volume sensor
+ // Initialize the volume sensor
   for (auto *sensor : App.get_sensors()) {
-    if (sensor->get_name() == "speaker_volume_sensor") {
+    ESP_LOGI(TAG, "Available sensor: %s", sensor->get_name().c_str());
+    if (sensor->get_name() == "homeassist03_homeassist_speaker_3_volume") {
       this->volume_sensor = sensor;
       break;
     }
