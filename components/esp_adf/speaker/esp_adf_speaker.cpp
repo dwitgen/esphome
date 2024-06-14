@@ -32,7 +32,10 @@ static const char *const TAG = "esp_adf.speaker";
 
 void ESPADFSpeaker::set_volume(int volume) {
     ESP_LOGI(TAG, "Setting volume to %d", volume);
-
+    // Debugging: Log all sensor keys and names
+    for (auto *sensor : App.get_sensors()) {
+      ESP_LOGI(TAG, "Sensor name: %s, Key: %u", sensor->get_name().c_str(), sensor->get_object_id_hash());
+    }
    // Read current volume from the device
     audio_board_handle_t board_handle = audio_board_init();
     int current_volume = 0;
@@ -57,7 +60,7 @@ void ESPADFSpeaker::set_volume(int volume) {
 
     // Set volume using HAL
     
-    audio_board_handle_t board_handle = audio_board_init();
+    //audio_board_handle_t board_handle = audio_board_init();
     esp_err_t err = audio_hal_set_volume(board_handle->audio_hal, volume);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error setting volume: %s", esp_err_to_name(err));
