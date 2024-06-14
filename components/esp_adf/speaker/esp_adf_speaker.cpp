@@ -59,10 +59,6 @@ void ESPADFSpeaker::set_volume(int volume) {
     }
 }
 
-void set_volume_sensor(sensor::Sensor *sensor) {
-        this->volume_sensor = sensor;
-    }
-
 void ESPADFSpeaker::volume_up() {
     ESP_LOGI(TAG, "Volume up button pressed");
     this->set_volume(this->volume_ + 10);
