@@ -36,6 +36,13 @@ void ESPADFSpeaker::set_volume(int volume) {
     for (auto *sensor : App.get_sensors()) {
       ESP_LOGI(TAG, "Sensor name: %s, Key: %u", sensor->get_name().c_str(), sensor->get_object_id_hash());
     }
+    for (auto *sensor : App.get_sensors()) {
+    if (sensor->get_name() == "speaker_volume_sensor") {
+      this->volume_sensor = static_cast<custom_components::CustomVolumeSensor *>(sensor);
+      ESP_LOGI(TAG, "Volume sensor initialized successfully: %s", sensor->get_name().c_str());
+      break;
+    }
+  }
    // Read current volume from the device
     audio_board_handle_t board_handle = audio_board_init();
     int current_volume = 0;
