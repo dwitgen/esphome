@@ -3,7 +3,7 @@
 #ifdef USE_ESP_IDF
 
 #include "../esp_adf.h"
-#include "custom_volume_sensor.h"
+#include "../custom_volume_sensor.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
