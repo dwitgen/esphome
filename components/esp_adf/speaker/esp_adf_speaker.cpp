@@ -29,13 +29,6 @@ static const char *const TAG = "esp_adf.speaker";
 // Define ADC configuration
 #define ADC_WIDTH_BIT    ADC_WIDTH_BIT_12
 #define ADC_ATTEN        ADC_ATTEN_DB_12
-//#define ADC_CHANNEL      ADC1_CHANNEL_7  // GPIO 8
-
-// Define thresholds for button detection in ADC values
-//#define VOL_UP_THRESHOLD_LOW     420
-//#define VOL_UP_THRESHOLD_HIGH    520
-//#define VOL_DOWN_THRESHOLD_LOW   950
-//#define VOL_DOWN_THRESHOLD_HIGH  1000
 
 void ESPADFSpeaker::set_volume(int volume) {
     ESP_LOGI(TAG, "Setting volume to %d", volume);
