@@ -101,7 +101,7 @@ void ESPADFSpeaker::setup() {
   }
 
     // Initialize the volume sensor
-      this->volume_sensor = App.get_sensor_by_key("speaker_volume_sensor");
+      this->volume_sensor = App.get_sensors("speaker_volume_sensor");
     
     // Set initial volume
     this->set_volume(volume_); // Set initial volume to 50%
