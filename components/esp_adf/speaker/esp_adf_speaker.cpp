@@ -130,27 +130,26 @@ void ESPADFSpeaker::setup() {
     }
   }
     
-  // Initialize the volume sensor
-   //this->volume_sensor = App.get_sensors<custom_components::CustomVolumeSensor>("speaker_volume_sensor");  
-  //this->volume_sensor = App.get_sensor_by_key(4286727486, false);
-  //for (auto *sensor : App.get_sensors()) {
-  //  ESP_LOGI(TAG, "Available sensor: %s", sensor->get_name().c_str());
-  //  if (sensor->get_name() == "homeassist03_homeassist_speaker_3_volume") {
-  //    this->volume_sensor = sensor;
-  //    break;
-  //  }
-  //}
-  if (this->volume_sensor == nullptr) {
-    ESP_LOGE(TAG, "Failed to get volume sensor component");
-  } else {
-    ESP_LOGI(TAG, "Volume sensor initialized successfully");
+   // Attempt to initialize the internal generic volume sensor by ID
+  for (auto *sensor : App.get_sensors()) {
+    if (sensor->get_object_id() == App.get_sensor("generic_volume_sensor")->get_object_id()) {
+      this->volume_sensor = sensor;
+      ESP_LOGI(TAG, "Internal generic volume sensor initialized successfully: %s", sensor->get_name().c_str());
+      break;
+    }
   }
-// Set initial volume
-this->set_volume(volume_); // Set initial volume to 50%
 
-// Configure ADC for volume control
-adc1_config_width(ADC_WIDTH_BIT);
-adc1_config_channel_atten((adc1_channel_t)but_channel, ADC_ATTEN);
+  if (this->volume_sensor == nullptr) {
+    ESP_LOGE(TAG, "Failed to get internal generic volume sensor component");
+  } else {
+    ESP_LOGI(TAG, "Internal generic volume sensor initialized correctly");
+  }
+  // Set initial volume
+  this->set_volume(volume_); // Set initial volume to 50%
+  
+  // Configure ADC for volume control
+  adc1_config_width(ADC_WIDTH_BIT);
+  adc1_config_channel_atten((adc1_channel_t)but_channel, ADC_ATTEN);
    
 }
 
