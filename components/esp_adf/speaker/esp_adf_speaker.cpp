@@ -115,13 +115,16 @@ void ESPADFSpeaker::setup() {
     return;
   }
 
- // Debugging: Log all sensor keys and names
+ // Log all sensor keys and names for debugging
   for (auto *sensor : App.get_sensors()) {
     ESP_LOGI(TAG, "Sensor name: %s, Key: %u", sensor->get_name().c_str(), sensor->get_object_id_hash());
+    if (sensor->get_name() == "speaker_volume_sensor") {
+      this->volume_sensor = static_cast<custom_components::CustomVolumeSensor *>(sensor);
+    }
   }
     
   // Initialize the volume sensor
-   this->volume_sensor = App.get_sensors<custom_components::CustomVolumeSensor>("speaker_volume_sensor");  
+   //this->volume_sensor = App.get_sensors<custom_components::CustomVolumeSensor>("speaker_volume_sensor");  
   //this->volume_sensor = App.get_sensor_by_key(4286727486, false);
   //for (auto *sensor : App.get_sensors()) {
   //  ESP_LOGI(TAG, "Available sensor: %s", sensor->get_name().c_str());
