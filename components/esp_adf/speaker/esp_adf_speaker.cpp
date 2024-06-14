@@ -100,15 +100,20 @@ void ESPADFSpeaker::setup() {
     return;
   }
 
-    // Initialize the volume sensor
-      this->volume_sensor = App.get_sensor_by_id("speaker_volume_sensor");
-    
-    // Set initial volume
-    this->set_volume(volume_); // Set initial volume to 50%
+  // Initialize the volume sensor
+  for (auto *sensor : App.get_sensors()) {
+    if (sensor->get_name() == "speaker_volume_sensor") {
+      this->volume_sensor = sensor;
+      break;
+    }
+  }
+        
+// Set initial volume
+this->set_volume(volume_); // Set initial volume to 50%
 
-    // Configure ADC for volume control
-    adc1_config_width(ADC_WIDTH_BIT);
-    adc1_config_channel_atten((adc1_channel_t)but_channel, ADC_ATTEN);
+// Configure ADC for volume control
+adc1_config_width(ADC_WIDTH_BIT);
+adc1_config_channel_atten((adc1_channel_t)but_channel, ADC_ATTEN);
    
 }
 
