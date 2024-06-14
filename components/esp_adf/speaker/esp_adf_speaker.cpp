@@ -43,18 +43,8 @@ void ESPADFSpeaker::set_volume(int volume) {
         this->volume_sensor->publish_state(this->volume_);
       } else {
         ESP_LOGE(TAG, "Volume sensor is not initialized");
-         // Attempt to initialize the volume sensor
-        this->volume_sensor = App.get_sensor_by_key(22, false);
-        if (this->volume_sensor != nullptr) {
-          ESP_LOGI(TAG, "Volume sensor initialized successfully in set_volume");
-          this->volume_sensor->publish_state(this->volume_);
-        }
-  }
       }
-    // Debugging: Log all sensor keys and names
-      for (auto *sensor : App.get_sensors()) {
-        ESP_LOGI(TAG, "Sensor name: %s, Key: %u", sensor->get_name().c_str(), sensor->get_object_id_hash());
-      }
+
     // Set volume using HAL
     
     audio_board_handle_t board_handle = audio_board_init();
