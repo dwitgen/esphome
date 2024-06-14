@@ -38,10 +38,12 @@ void ESPADFSpeaker::set_volume(int volume) {
     if (volume > 100) volume = 100;
     this->volume_ = volume;
 
-    // Update the volume sensor
-    if (this->volume_sensor != nullptr) {
+      // Update the volume sensor
+      if (this->volume_sensor != nullptr) {
         this->volume_sensor->publish_state(this->volume_);
-    }
+      } else {
+        ESP_LOGE(TAG, "Volume sensor is not initialized");
+      }
 
     // Set volume using HAL
     
@@ -106,6 +108,9 @@ void ESPADFSpeaker::setup() {
       this->volume_sensor = sensor;
       break;
     }
+  }
+  if (this->volume_sensor == nullptr) {
+    ESP_LOGE(TAG, "Failed to get volume sensor component");
   }
         
 // Set initial volume
