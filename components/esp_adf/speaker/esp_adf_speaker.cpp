@@ -32,38 +32,11 @@ static const char *const TAG = "esp_adf.speaker";
 
 void ESPADFSpeaker::set_volume(int volume) {
     ESP_LOGI(TAG, "Setting volume to %d", volume);
-    // Debugging: Log all sensor keys and names
-    for (auto *sensor : App.get_sensors()) {
-      ESP_LOGI(TAG, "Sensor name: %s, Key: %u", sensor->get_name().c_str(), sensor->get_object_id_hash());
-    }
-    for (auto *sensor : App.get_sensors()) {
-    if (sensor->get_name() == "speaker_volume_sensor") {
-      this->volume_sensor = static_cast<custom_components::CustomVolumeSensor *>(sensor);
-      ESP_LOGI(TAG, "Volume sensor initialized successfully: %s", sensor->get_name().c_str());
-      break;
-    }
-  }
-   // Read current volume from the device
-    audio_board_handle_t board_handle = audio_board_init();
-    int current_volume = 0;
-    esp_err_t read_err = audio_hal_get_volume(board_handle->audio_hal, &current_volume);
-    if (read_err == ESP_OK) {
-      ESP_LOGI(TAG, "Current device volume: %d", current_volume);
-    } else {
-      ESP_LOGE(TAG, "Error reading current volume: %s", esp_err_to_name(read_err));
-    }
-
+    
     // Ensure the volume is within the range 0-100
     if (volume < 0) volume = 0;
     if (volume > 100) volume = 100;
     this->volume_ = volume;
-
-    // Update the volume sensor
-    if (this->volume_sensor != nullptr) {
-      this->volume_sensor->publish_state(this->volume_);
-    } else {
-      ESP_LOGE(TAG, "Volume sensor is not initialized");
-    }
 
     // Set volume using HAL
     
@@ -72,16 +45,41 @@ void ESPADFSpeaker::set_volume(int volume) {
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error setting volume: %s", esp_err_to_name(err));
     }
-}
 
+    // Update the volume sensor
+    if (this->volume_sensor != nullptr) {
+      this->volume_sensor->publish_state(this->volume_);
+    } else {
+      ESP_LOGE(TAG, "Volume sensor is not initialized");
+    }
+}
+int ESPADFSpeaker::get_current_volume() {
+  audio_board_handle_t board_handle = audio_board_init();
+  if (board_handle == nullptr) {
+    ESP_LOGE(TAG, "Failed to initialize audio board");
+    return 0;
+  }
+
+  int current_volume = 0;
+  esp_err_t read_err = audio_hal_get_volume(board_handle->audio_hal, &current_volume);
+  if (read_err == ESP_OK) {
+    ESP_LOGI(TAG, "Current device volume: %d", current_volume);
+  } else {
+    ESP_LOGE(TAG, "Error reading current volume: %s", esp_err_to_name(read_err));
+  }
+
+  return current_volume;
+}
 void ESPADFSpeaker::volume_up() {
     ESP_LOGI(TAG, "Volume up button pressed");
-    this->set_volume(this->volume_ + 10);
+    int current_volume = this->get_current_volume();
+    this->set_volume(current_volume + 10);
 }
 
 void ESPADFSpeaker::volume_down() {
     ESP_LOGI(TAG, "Volume down button pressed");
-    this->set_volume(this->volume_ - 10);
+    int current_volume = this->get_current_volume();
+    this->set_volume(current_volume - 10);
 }
 
 void ESPADFSpeaker::setup() {
@@ -146,6 +144,10 @@ void ESPADFSpeaker::setup() {
   }
   // Set initial volume
   this->set_volume(volume_); // Set initial volume to 50%
+
+   // Read and set initial volume
+  int initial_volume = this->get_current_volume();
+  this->set_volume(initial_volume);
   
   // Configure ADC for volume control
   adc1_config_width(ADC_WIDTH_BIT);
