@@ -50,6 +50,10 @@ void ESPADFSpeaker::set_volume(int volume) {
         this->volume_sensor->publish_state(this->volume_);
     }
 
+    void set_volume_sensor(sensor::Sensor *sensor) {
+        this->volume_sensor = sensor;
+    }
+    
     // Set volume using HAL
     
     audio_board_handle_t board_handle = audio_board_init();
