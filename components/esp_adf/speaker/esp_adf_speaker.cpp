@@ -102,18 +102,25 @@ void ESPADFSpeaker::setup() {
     return;
   }
 
- // Initialize the volume sensor
+ // Debugging: Log all sensor keys and names
   for (auto *sensor : App.get_sensors()) {
-    ESP_LOGI(TAG, "Available sensor: %s", sensor->get_name().c_str());
-    if (sensor->get_name() == "homeassist03_homeassist_speaker_3_volume") {
-      this->volume_sensor = sensor;
-      break;
-    }
+    ESP_LOGI(TAG, "Sensor name: %s, Key: %u", sensor->get_name().c_str(), sensor->get_object_id_hash());
   }
+    
+ // Initialize the volume sensor
+  this->volume_sensor = App.get_sensor_by_key(22, false);
+  //for (auto *sensor : App.get_sensors()) {
+  //  ESP_LOGI(TAG, "Available sensor: %s", sensor->get_name().c_str());
+  //  if (sensor->get_name() == "homeassist03_homeassist_speaker_3_volume") {
+  //    this->volume_sensor = sensor;
+  //    break;
+  //  }
+  //}
   if (this->volume_sensor == nullptr) {
     ESP_LOGE(TAG, "Failed to get volume sensor component");
+  } else {
+    ESP_LOGI(TAG, "Volume sensor initialized successfully");
   }
-        
 // Set initial volume
 this->set_volume(volume_); // Set initial volume to 50%
 
