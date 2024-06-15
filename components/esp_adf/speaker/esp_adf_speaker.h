@@ -32,14 +32,10 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
 
   bool has_buffered_data() const override;
 
-  // Declare the set_volume method
-  //void set_volume(int volume);
-
   // Declare methods for volume control
   void set_volume(int volume);
   void volume_up();
   void volume_down();
-  //int get_volume() const { return volume_; } 
   // Declare a method to get the current volume from the device
   int get_current_volume();
 
