@@ -40,7 +40,7 @@ void ESPADFSpeaker::set_volume(int volume) {
 
     // Set volume using HAL
     
-    //audio_board_handle_t board_handle = audio_board_init();
+    audio_board_handle_t board_handle = audio_board_init();
     esp_err_t err = audio_hal_set_volume(board_handle->audio_hal, volume);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error setting volume: %s", esp_err_to_name(err));
