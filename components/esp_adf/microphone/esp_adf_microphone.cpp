@@ -107,6 +107,13 @@ void ESPADFMicrophone::read_task(void *params) {
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
       .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
+      .chan_mask = 1,
+      .total_chan = 1,
+      .left_align = true,
+      .big_edin = false,
+      .bit_order_msb = false,
+      .skip_mask = true,
+      
   };
 
   i2s_stream_cfg_t i2s_cfg = {
