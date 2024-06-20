@@ -112,6 +112,7 @@ void ESPADFMicrophone::read_task(void *params) {
       .left_align = true,
       .big_edin = false,
       .bit_order_msb = false,
+      .skip_msk = true,
            
   };
 
