@@ -112,8 +112,7 @@ void ESPADFMicrophone::read_task(void *params) {
       .left_align = true,
       .big_edin = false,
       .bit_order_msb = false,
-      .skip_mask = true,
-      
+           
   };
 
   i2s_stream_cfg_t i2s_cfg = {
