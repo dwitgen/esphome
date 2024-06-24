@@ -375,7 +375,7 @@ void ESPADFSpeaker::loop() {
       break;
   }
    // Read ADC value for button control
-    int adc_value = adc1_get_raw((adc1_channel_t)INPUT_BUTOP_ID);
+   /* int adc_value = adc1_get_raw((adc1_channel_t)INPUT_BUTOP_ID);
     if (adc_value < 0) {
         ESP_LOGE(TAG, "ADC read error");
         return;
@@ -390,7 +390,7 @@ void ESPADFSpeaker::loop() {
     } else if (adc_value >= VOL_DOWN_THRESHOLD_LOW && adc_value <= VOL_DOWN_THRESHOLD_HIGH) {
         ESP_LOGI(TAG, "Volume down detected");
         this->volume_down();
-    }
+    }*/
 }
 
 size_t ESPADFSpeaker::play(const uint8_t *data, size_t length) {
