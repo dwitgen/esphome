@@ -16,6 +16,10 @@
 #include <i2s_stream.h>
 #include <raw_stream.h>
 
+#include "esp_peripherals.h"
+#include "periph_adc_button.h"
+#include "input_key_service.h"
+
 #ifdef USE_ESP_ADF_BOARD
 #include <board.h>
 #endif
