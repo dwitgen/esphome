@@ -45,7 +45,12 @@ void ESPADFSpeaker::set_volume(int volume) {
     // Set volume using HAL
     
     //audio_board_handle_t board_handle = audio_board_init();
-    esp_err_t err = audio_hal_set_volume(board_handle->audio_hal, volume);
+    // Use the stored board handle instead of re-initializing it
+    if (board_handle_ == nullptr) {
+      ESP_LOGE(TAG, "Audio board handle is not initialized");
+      return 0;
+    }
+    esp_err_t err = audio_hal_set_volume(board_handle_->audio_hal, volume);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error setting volume: %s", esp_err_to_name(err));
     }
@@ -58,11 +63,17 @@ void ESPADFSpeaker::set_volume(int volume) {
     }
 }
 int ESPADFSpeaker::get_current_volume() {
-  audio_board_handle_t board_handle = audio_board_init();
-  if (board_handle == nullptr) {
-    ESP_LOGE(TAG, "Failed to initialize audio board");
+  // Use the stored board handle instead of re-initializing it
+  if (board_handle_ == nullptr) {
+    ESP_LOGE(TAG, "Audio board handle is not initialized");
     return 0;
   }
+  
+  // Assuming there is a method in the audio board API to get the volume
+  int current_volume = 0;
+  audio_hal_get_volume(board_handle_->audio_hal, &current_volume);
+  return current_volume;
+}
 
   int current_volume = 0;
   esp_err_t read_err = audio_hal_get_volume(board_handle->audio_hal, &current_volume);
@@ -146,6 +157,15 @@ void ESPADFSpeaker::setup() {
   } else {
     ESP_LOGI(TAG, "Internal generic volume sensor initialized correctly");
   }
+
+  // Initialize the audio board and store the handle
+  this->board_handle_ = audio_board_init();
+  if (this->board_handle_ == nullptr) {
+    ESP_LOGE(TAG, "Failed to initialize audio board");
+    this->mark_failed();
+    return;
+  }
+    
   // Set initial volume
   this->set_volume(volume_); // Set initial volume to 50%
 
