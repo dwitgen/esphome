@@ -232,12 +232,12 @@ void ESPADFSpeaker::handle_button_event(int32_t id, int32_t event_type) {
                 //volume_down();
                 break;
             case 1:
-                ESP_LOGI(TAG, "Record button detected");
-                handle_rec_button();
+                ESP_LOGI(TAG, "Volume Down detected");
+                volume_down();
                 break;
             case 2:
                 ESP_LOGI(TAG, "Set button detected");
-                handle_set_button();
+                volume_up();
                 break;
             case 3:
                 ESP_LOGI(TAG, "Play button detected");
