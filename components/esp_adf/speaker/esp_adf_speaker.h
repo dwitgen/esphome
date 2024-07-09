@@ -71,6 +71,8 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
   QueueHandle_t event_queue_;
   private:
   int volume_ = 50;  // Default volume level
+  // Add a member variable for the audio board handle
+  audio_board_handle_t board_handle_ = nullptr;
 };
 
 }  // namespace esp_adf
