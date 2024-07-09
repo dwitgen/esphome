@@ -14,13 +14,6 @@
 
 #include <audio_element.h>
 #include <audio_pipeline.h>
-#include <audio_hal.h>
-#include "esp_peripherals.h"
-#include "periph_adc_button.h"
-#include "input_key_service.h"
-#include <board.h>
-
-#include <esp_event.h>
 
 namespace esphome {
 namespace esp_adf {
@@ -45,12 +38,6 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
   void volume_down();
   // Declare a method to get the current volume from the device
   int get_current_volume();
-  
-  static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx);
-  void handle_set_button();
-  void handle_play_button();
-  void handle_mode_button();
-  void handle_rec_button();
 
   // Declare a sensor for volume level
   sensor::Sensor *volume_sensor = nullptr;
@@ -60,8 +47,6 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
   void watch_();
 
   static void player_task(void *params);
-  static void button_event_handler(void *handler_args, esp_event_base_t base, int32_t id, void *event_data);
-  void handle_button_event(int32_t id, int32_t event_type);
 
   TaskHandle_t player_task_handle_{nullptr};
   struct {
@@ -71,8 +56,6 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
   QueueHandle_t event_queue_;
   private:
   int volume_ = 50;  // Default volume level
-  // Add a member variable for the audio board handle
-  audio_board_handle_t board_handle_ = nullptr;
 };
 
 }  // namespace esp_adf
