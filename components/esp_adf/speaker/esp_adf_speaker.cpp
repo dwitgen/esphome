@@ -202,7 +202,7 @@ void ESPADFSpeaker::player_task(void *params) {
       .i2s_port = I2S_NUM_0,
       .use_alc = false,
       .volume = 0,
-      .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,
+      .out_rb_size = 16 * 1024, //I2S_STREAM_RINGBUFFER_SIZE,
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
