@@ -20,9 +20,6 @@
 #include <board.h>
 #endif
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-
 namespace esphome {
 namespace esp_adf {
 
@@ -177,7 +174,8 @@ void ESPADFSpeaker::player_task(void *params) {
   TaskEvent event;
   event.type = TaskEventType::STARTING;
   xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
-
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
   i2s_driver_config_t i2s_config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_TX),
       .sample_rate = 16000,
@@ -192,14 +190,8 @@ void ESPADFSpeaker::player_task(void *params) {
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
       .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
-      /*.chan_mask = I2S_CHANNEL_MONO,          // Default value
-      .total_chan = 2,         // Default value, adjust as necessary
-      .left_align = false,     // Default value
-      .big_edin = false,       // Default value
-      .bit_order_msb = true,   // Default value
-      .skip_msk = false,        // Default value*/
   };
-
+  #pragma GCC diagnostic pop
   audio_pipeline_cfg_t pipeline_cfg = {
       .rb_size = 8 * 1024,
   };
