@@ -245,7 +245,7 @@ void ESPADFSpeaker::handle_button_event(int32_t id, int32_t event_type) {
                ESP_LOGI(TAG, "Volume down detected");
                volume_down();
                break;
-            case 3:
+            case BUTTON_SET_ID:
                 ESP_LOGI(TAG, "Set button detected");
                 handle_set_button();
                 break;
