@@ -194,7 +194,7 @@ void ESPADFSpeaker::player_task(void *params) {
       .left_align = false,     // Default value
       .big_edin = false,       // Default value
       .bit_order_msb = true,   // Default value
-      .skip_msk = false        // Default value
+      .skip_msk = false,        // Default value
   };
 
   audio_pipeline_cfg_t pipeline_cfg = {
