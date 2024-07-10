@@ -192,7 +192,7 @@ void ESPADFSpeaker::player_task(void *params) {
   };
 
   audio_pipeline_cfg_t pipeline_cfg = {
-      .rb_size = 8 * 1024,
+      .rb_size = 16 * 1024,
   };
   audio_pipeline_handle_t pipeline = audio_pipeline_init(&pipeline_cfg);
 
@@ -238,7 +238,7 @@ void ESPADFSpeaker::player_task(void *params) {
 
   raw_stream_cfg_t raw_cfg = {
       .type = AUDIO_STREAM_WRITER,
-      .out_rb_size = 8 * 1024,
+      .out_rb_size = 16 * 1024,
   };
   audio_element_handle_t raw_write = raw_stream_init(&raw_cfg);
 
