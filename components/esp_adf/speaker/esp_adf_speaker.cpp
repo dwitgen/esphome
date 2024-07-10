@@ -40,8 +40,8 @@ void ESPADFSpeaker::set_volume(int volume) {
 
     // Set volume using HAL
     
-    audio_board_handle_t board_handle = audio_board_init();
-    esp_err_t err = audio_hal_set_volume(board_handle->audio_hal, volume);
+    //audio_board_handle_t board_handle = audio_board_init();
+    esp_err_t err = audio_hal_set_volume(board_handle_->audio_hal, volume);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error setting volume: %s", esp_err_to_name(err));
     }
@@ -54,14 +54,14 @@ void ESPADFSpeaker::set_volume(int volume) {
     }
 }
 int ESPADFSpeaker::get_current_volume() {
-  audio_board_handle_t board_handle = audio_board_init();
-  if (board_handle == nullptr) {
-    ESP_LOGE(TAG, "Failed to initialize audio board");
-    return 0;
-  }
+  //audio_board_handle_t board_handle = audio_board_init();
+  //if (board_handle == nullptr) {
+  //  ESP_LOGE(TAG, "Failed to initialize audio board");
+  //  return 0;
+  //}
 
   int current_volume = 0;
-  esp_err_t read_err = audio_hal_get_volume(board_handle->audio_hal, &current_volume);
+  esp_err_t read_err = audio_hal_get_volume(board_handle_->audio_hal, &current_volume);
   if (read_err == ESP_OK) {
     ESP_LOGI(TAG, "Current device volume: %d", current_volume);
   } else {
