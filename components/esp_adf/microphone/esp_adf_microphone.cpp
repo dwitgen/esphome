@@ -18,9 +18,6 @@
 
 #include <board.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-
 namespace esphome {
 namespace esp_adf {
 
@@ -96,6 +93,8 @@ void ESPADFMicrophone::read_task(void *params) {
   };
   audio_pipeline_handle_t pipeline = audio_pipeline_init(&pipeline_cfg);
 
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
   i2s_driver_config_t i2s_config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = 16000,
@@ -110,7 +109,8 @@ void ESPADFMicrophone::read_task(void *params) {
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
       .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
-};
+  };
+  #pragma GCC diagnostic pop
 
   i2s_stream_cfg_t i2s_cfg = {
       .type = AUDIO_STREAM_READER,
