@@ -18,6 +18,9 @@
 
 #include <board.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+
 namespace esphome {
 namespace esp_adf {
 
@@ -101,26 +104,22 @@ void ESPADFMicrophone::read_task(void *params) {
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
       .dma_buf_count = 8,
-      .dma_buf_len = 128,
+      .dma_buf_len = 1024, //128,
       .use_apll = false,
       .tx_desc_auto_clear = true,
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
       .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
-      .chan_mask = I2S_CHANNEL_MONO,    // Correct value type, adjust as necessary
-      .total_chan = 2,                  // Default value, adjust as necessary
-      .left_align = false,              // Default value
-      .big_edin = false,                // Default value
-      .bit_order_msb = true,            // Default value
-      .skip_msk = false,                 // Default value
-      /*.chan_mask = NULL,
-      .total_chan = NULL,
-      .left_align = FALSE,
-      .big_edin = false,
-      .bit_order_msb = false,
-      .skip_msk = true,*/
-           
-  };
+};
+
+#if SOC_I2S_SUPPORTS_TDM
+i2s_config.chan_mask = I2S_CHANNEL_FMT_RIGHT_LEFT;
+i2s_config.total_chan = 2;
+i2s_config.left_align = false;
+i2s_config.big_edin = false;
+i2s_config.bit_order_msb = true;
+i2s_config.skip_msk = false;
+#endif 
 
   i2s_stream_cfg_t i2s_cfg = {
       .type = AUDIO_STREAM_READER,
