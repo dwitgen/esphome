@@ -39,10 +39,6 @@ void ESPADFSpeaker::set_volume(int volume) {
     this->volume_ = volume;
 
     // Set volume using HAL
-    if (this->board_handle_ == nullptr) {
-        ESP_LOGE(TAG, "Audio board handle is not initialized");
-        return;
-    }
     
     //audio_board_handle_t board_handle = audio_board_init();
     esp_err_t err = audio_hal_set_volume(board_handle_->audio_hal, volume);
@@ -58,12 +54,7 @@ void ESPADFSpeaker::set_volume(int volume) {
     }
 }
 int ESPADFSpeaker::get_current_volume() {
-  //audio_board_handle_t board_handle = audio_board_init();
-  //if (board_handle == nullptr) {
-  //  ESP_LOGE(TAG, "Failed to initialize audio board");
-  //  return 0;
-  //}
-
+  
   int current_volume = 0;
   esp_err_t read_err = audio_hal_get_volume(board_handle_->audio_hal, &current_volume);
   if (read_err == ESP_OK) {
@@ -161,142 +152,11 @@ void ESPADFSpeaker::setup() {
    // Read and set initial volume
   int initial_volume = this->get_current_volume();
   this->set_volume(initial_volume);
-
-   // Initialize the peripheral set with increased queue size
-    ESP_LOGI(TAG, "Initializing peripheral set...");
-    esp_periph_config_t periph_cfg = {
-        .task_stack = 8192, //16384, //8192,
-        .task_prio = 5, //10, //5,
-        .task_core = 0,
-        .extern_stack = false
-    };
-    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
-    if (!set) {
-        ESP_LOGE(TAG, "Failed to initialize peripheral set");
-        return;
-    }
-
-    // Initialize the audio board keys
-    ESP_LOGI(TAG, "Initializing audio board keys...");
-    audio_board_key_init(set);
-
-    ESP_LOGI(TAG, "[ 3 ] Create and start input key service");
-    input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
-    input_key_service_cfg_t input_cfg = {
-        .based_cfg = {
-            .task_stack = ADC_BUTTON_STACK_SIZE, //4 * 1024, // INPUT_KEY_SERVICE_TASK_STACK_SIZE,
-            .task_prio = ADC_BUTTON_TASK_PRIORITY, //10, //INPUT_KEY_SERVICE_TASK_PRIORITY,
-            .task_core = ADC_BUTTON_TASK_CORE_ID, //INPUT_KEY_SERVICE_TASK_ON_CORE,
-            .task_func = nullptr,
-            .extern_stack = false,
-            .service_start = nullptr,
-            .service_stop = nullptr,
-            .service_destroy = nullptr,
-            .service_ioctl = nullptr,
-            .service_name = nullptr,
-            .user_data = nullptr
-        },
-        .handle = set
-    };
-    periph_service_handle_t input_ser = input_key_service_create(&input_cfg);
-    input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
-    periph_service_set_callback(input_ser, ESPADFSpeaker::input_key_service_cb, this); 
-    
   
   // Configure ADC for volume control
   adc1_config_width(ADC_WIDTH_BIT);
   adc1_config_channel_atten((adc1_channel_t)but_channel, ADC_ATTEN);
    
-}
-
-esp_err_t ESPADFSpeaker::input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx) {
-    ESPADFSpeaker *instance = static_cast<ESPADFSpeaker*>(ctx);
-    int32_t id = static_cast<int32_t>(reinterpret_cast<uintptr_t>(evt->data));
-
-    // Read the ADC value
-    int adc_value = adc1_get_raw(INPUT_BUTOP_ID);  // Replace with your ADC channel
-    ESP_LOGI(TAG, "Button event callback received: id=%d, event type=%d, ADC value=%d", id, evt->type, adc_value);
-
-    instance->handle_button_event(id, evt->type);
-    return ESP_OK;
-}
-
-void ESPADFSpeaker::handle_button_event(int32_t id, int32_t event_type) {
-    ESP_LOGI(TAG, "Handle Button event received: id=%d", id);
-    if (event_type != 1 && event_type != 3) { // Only process the event if the event_type is 1 click action or 3 long press action
-        ESP_LOGI(TAG, "Ignoring event with type: %d", event_type);
-        return;
-    }
-    uint32_t current_time = millis();
-    static uint32_t last_button_press[7] = {0};
-    uint32_t debounce_time = 200;
-
-    if (id == BUTTON_MODE_ID) {
-        debounce_time = 500;
-    }
-
-    if (current_time - last_button_press[id] > debounce_time) {
-        switch (id) {
-            case BUTTON_VOLUP_ID:
-               ESP_LOGI(TAG, "Volume up detected");
-               volume_up();
-               break;
-            case BUTTON_VOLDOWN_ID:
-               ESP_LOGI(TAG, "Volume down detected");
-               volume_down();
-               break;
-            case BUTTON_SET_ID:
-                ESP_LOGI(TAG, "Set button detected");
-                handle_set_button();
-                break;
-            case BUTTON_PLAY_ID:
-                ESP_LOGI(TAG, "Play button detected");
-                handle_play_button();
-                break;
-            case BUTTON_MODE_ID:
-                ESP_LOGI(TAG, "Mode button detected");
-                handle_mode_button();
-                break;
-            case BUTTON_REC_ID:
-                ESP_LOGI(TAG, "Record button detected");
-                handle_rec_button();
-                break;
-            default:
-                ESP_LOGW(TAG, "Unhandled button event id: %d", id);
-                break;
-        }
-        last_button_press[id] = current_time;
-    }
-}
-
-
-
-void ESPADFSpeaker::handle_mode_button() {
-    ESP_LOGI(TAG, "Mode button action");
-    // Add code to mode
-    /*if (this->state_ != speaker::STATE_RUNNING && this->state_ != speaker::STATE_STARTING) {
-        ESP_LOGI(TAG, "Mode button, speaker stopped");
-        this->play_url("http://streaming.tdiradio.com:8000/house.mp3");
-    } else {
-        ESP_LOGI(TAG, "State is stopping");
-        this->cleanup_audio_pipeline();
-        this->stop();
-    }*/
-}
-
-void ESPADFSpeaker::handle_play_button() {
-    ESP_LOGI(TAG, "Play button action");
-    // Add code to play
-}
-
-void ESPADFSpeaker::handle_set_button() {
-    ESP_LOGI(TAG, "Set button action");
-    // Add code to handle set action
-}
-
-void ESPADFSpeaker::handle_rec_button() {
-    ESP_LOGI(TAG, "Record button action");
-    // Add code to start recording
 }
 
 void ESPADFSpeaker::start() { this->state_ = speaker::STATE_STARTING; }
