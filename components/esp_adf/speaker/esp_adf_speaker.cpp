@@ -189,6 +189,12 @@ void ESPADFSpeaker::player_task(void *params) {
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
       .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
+      .chan_mask = 0,          // Default value
+      .total_chan = 2,         // Default value, adjust as necessary
+      .left_align = false,     // Default value
+      .big_edin = false,       // Default value
+      .bit_order_msb = true,   // Default value
+      .skip_msk = false        // Default value
   };
 
   audio_pipeline_cfg_t pipeline_cfg = {
