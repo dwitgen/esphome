@@ -142,6 +142,15 @@ void ESPADFSpeaker::setup() {
   } else {
     ESP_LOGI(TAG, "Internal generic volume sensor initialized correctly");
   }
+
+  // Initialize the audio board and store the handle
+  this->board_handle_ = audio_board_init();
+  if (this->board_handle_ == nullptr) {
+      ESP_LOGE(TAG, "Failed to initialize audio board");
+      this->mark_failed();
+      return;
+  }
+    
   // Set initial volume
   this->set_volume(volume_); // Set initial volume to 50%
 
