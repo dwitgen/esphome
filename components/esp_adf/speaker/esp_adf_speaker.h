@@ -45,6 +45,12 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
   // Declare a method to get the current volume from the device
   int get_current_volume();
 
+  static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx);
+  void handle_set_button();
+  void handle_play_button();
+  void handle_mode_button();
+  void handle_rec_button();
+
   // Declare a sensor for volume level
   sensor::Sensor *volume_sensor = nullptr;
 
@@ -54,6 +60,8 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
 
   static void player_task(void *params);
   audio_board_handle_t board_handle_ = nullptr;
+  static void button_event_handler(void *handler_args, esp_event_base_t base, int32_t id, void *event_data);
+  void handle_button_event(int32_t id, int32_t event_type);
 
   TaskHandle_t player_task_handle_{nullptr};
    struct {
