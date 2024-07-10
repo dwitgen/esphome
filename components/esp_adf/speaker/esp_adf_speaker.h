@@ -47,15 +47,16 @@ class ESPADFSpeaker : public ESPADFPipeline, public speaker::Speaker, public Com
   void watch_();
 
   static void player_task(void *params);
+  audio_board_handle_t board_handle_ = nullptr;
 
   TaskHandle_t player_task_handle_{nullptr};
-  struct {
-    QueueHandle_t handle;
-    uint8_t *storage;
-  } buffer_queue_;
-  QueueHandle_t event_queue_;
-  private:
-  int volume_ = 50;  // Default volume level
+   struct {
+     QueueHandle_t handle;
+     uint8_t *storage;
+   } buffer_queue_;
+   QueueHandle_t event_queue_;
+ private:
+   int volume_ = 50;  // Default volume level
 };
 
 }  // namespace esp_adf
