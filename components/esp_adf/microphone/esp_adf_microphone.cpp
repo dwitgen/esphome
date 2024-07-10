@@ -119,7 +119,7 @@ i2s_config.left_align = false;
 i2s_config.big_edin = false;
 i2s_config.bit_order_msb = true;
 i2s_config.skip_msk = false;
-#endif*? 
+#endif*/ 
 
   i2s_stream_cfg_t i2s_cfg = {
       .type = AUDIO_STREAM_READER,
