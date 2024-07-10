@@ -182,7 +182,7 @@ void ESPADFSpeaker::player_task(void *params) {
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-      .dma_buf_count = 16, 
+      .dma_buf_count = 8, 
       .dma_buf_len = 1024, 
       .use_apll = false,
       .tx_desc_auto_clear = true,
@@ -192,7 +192,7 @@ void ESPADFSpeaker::player_task(void *params) {
   };
 
   audio_pipeline_cfg_t pipeline_cfg = {
-      .rb_size = 16 * 1024,
+      .rb_size = 8 * 1024,
   };
   audio_pipeline_handle_t pipeline = audio_pipeline_init(&pipeline_cfg);
 
@@ -202,7 +202,7 @@ void ESPADFSpeaker::player_task(void *params) {
       .i2s_port = I2S_NUM_0,
       .use_alc = false,
       .volume = 0,
-      .out_rb_size = 16 * 1024, //I2S_STREAM_RINGBUFFER_SIZE,
+      .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
@@ -238,7 +238,7 @@ void ESPADFSpeaker::player_task(void *params) {
 
   raw_stream_cfg_t raw_cfg = {
       .type = AUDIO_STREAM_WRITER,
-      .out_rb_size = 16 * 1024,
+      .out_rb_size = 8 * 1024,
   };
   audio_element_handle_t raw_write = raw_stream_init(&raw_cfg);
 
