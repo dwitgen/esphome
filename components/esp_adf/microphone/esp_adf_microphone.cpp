@@ -112,15 +112,6 @@ void ESPADFMicrophone::read_task(void *params) {
       .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
 };
 
-/*#if SOC_I2S_SUPPORTS_TDM
-i2s_config.chan_mask = (i2s_channel_t) I2S_CHANNEL_FMT_RIGHT_LEFT;
-i2s_config.total_chan = 2;
-i2s_config.left_align = false;
-i2s_config.big_edin = false;
-i2s_config.bit_order_msb = true;
-i2s_config.skip_msk = false;
-#endif*/ 
-
   i2s_stream_cfg_t i2s_cfg = {
       .type = AUDIO_STREAM_READER,
       .i2s_config = i2s_config,
