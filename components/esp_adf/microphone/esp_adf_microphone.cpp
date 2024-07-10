@@ -113,7 +113,7 @@ void ESPADFMicrophone::read_task(void *params) {
 };
 
 #if SOC_I2S_SUPPORTS_TDM
-i2s_config.chan_mask = I2S_CHANNEL_LEFT_RIGHT;
+i2s_config.chan_mask = (i2s_channel_t) I2S_CHANNEL_FMT_RIGHT_LEFT;
 i2s_config.total_chan = 2;
 i2s_config.left_align = false;
 i2s_config.big_edin = false;
