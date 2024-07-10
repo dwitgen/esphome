@@ -39,6 +39,10 @@ void ESPADFSpeaker::set_volume(int volume) {
     this->volume_ = volume;
 
     // Set volume using HAL
+    if (this->board_handle_ == nullptr) {
+        ESP_LOGE(TAG, "Audio board handle is not initialized");
+        return;
+    }
     
     //audio_board_handle_t board_handle = audio_board_init();
     esp_err_t err = audio_hal_set_volume(board_handle_->audio_hal, volume);
