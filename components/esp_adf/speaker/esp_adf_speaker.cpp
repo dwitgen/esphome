@@ -3,6 +3,7 @@
 #ifdef USE_ESP_IDF
 
 #include <driver/i2s.h>
+// Added includes for button controls
 #include <driver/gpio.h>
 #include <driver/adc.h>
 #include <esp_adc_cal.h>
@@ -16,6 +17,7 @@
 #include <i2s_stream.h>
 #include <raw_stream.h>
 
+// Added include for board config to be used with button and other controls
 #ifdef USE_ESP_ADF_BOARD
 #include <board.h>
 #endif
@@ -26,10 +28,11 @@ namespace esp_adf {
 static const size_t BUFFER_COUNT = 50;
 static const char *const TAG = "esp_adf.speaker";
 
-// Define ADC configuration
+// Define ADC configuration added for button controls, maybe not correct to have in speaker config
 #define ADC_WIDTH_BIT    ADC_WIDTH_BIT_12
 #define ADC_ATTEN        ADC_ATTEN_DB_12
 
+//Volume controls for buttons again speaker may mot be the correct location for this
 void ESPADFSpeaker::set_volume(int volume) {
     ESP_LOGI(TAG, "Setting volume to %d", volume);
     
@@ -81,7 +84,7 @@ void ESPADFSpeaker::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ESP ADF Speaker...");
 
   #ifdef USE_ESP_ADF_BOARD
-  // Use the PA enable pin from board configuration
+  // Use the PA enable pin from board.h configuration trying to stop speaker popping with control of the PA during speaker operations
   gpio_num_t pa_enable_gpio = static_cast<gpio_num_t>(get_pa_enable_gpio());
   int but_channel = INPUT_BUTOP_ID;
   #endif
@@ -115,6 +118,7 @@ void ESPADFSpeaker::setup() {
     return;
   }
 
+ //Adding intial setup for volume controls for the speaker
  // Find the key for the generic volume sensor
   uint32_t volume_sensor_key = 0;
   for (auto *sensor : App.get_sensors()) {
@@ -164,7 +168,6 @@ void ESPADFSpeaker::start_() {
   if (!this->parent_->try_lock()) {
     return;  // Waiting for another i2s component to return lock
   }
-  //gpio_set_level(PA_ENABLE_GPIO, 1);  // Enable PA
   xTaskCreate(ESPADFSpeaker::player_task, "speaker_task", 8192, (void *) this, 0, &this->player_task_handle_);
 }
 
@@ -174,8 +177,8 @@ void ESPADFSpeaker::player_task(void *params) {
   TaskEvent event;
   event.type = TaskEventType::STARTING;
   xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+  //#pragma GCC diagnostic push
+  //#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
   i2s_driver_config_t i2s_config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_TX),
       .sample_rate = 16000,
@@ -183,15 +186,15 @@ void ESPADFSpeaker::player_task(void *params) {
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-      .dma_buf_count = 8, 
-      .dma_buf_len = 1024, 
+      .dma_buf_count = 8,
+      .dma_buf_len = 1024,
       .use_apll = false,
       .tx_desc_auto_clear = true,
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
       .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
   };
-  #pragma GCC diagnostic pop
+  //#pragma GCC diagnostic pop
   audio_pipeline_cfg_t pipeline_cfg = {
       .rb_size = 8 * 1024,
   };
@@ -260,7 +263,8 @@ void ESPADFSpeaker::player_task(void *params) {
 
   event.type = TaskEventType::STARTED;
   xQueueSend(this_speaker->event_queue_, &event, 0);
-  gpio_set_level(PA_ENABLE_GPIO, 1);  // Enable PA
+  // Enable PA just after started event to try and stop popping
+  gpio_set_level(PA_ENABLE_GPIO, 1);  
 
   uint32_t last_received = millis();
 
@@ -320,7 +324,8 @@ void ESPADFSpeaker::player_task(void *params) {
 
   event.type = TaskEventType::STOPPED;
   xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
-  gpio_set_level(PA_ENABLE_GPIO, 0);  // Disable PA
+  // Disable PA just after the stopped event, doing this to prevent popping in speaker
+  gpio_set_level(PA_ENABLE_GPIO, 0);  
 
   while (true) {
     delay(10);
@@ -337,7 +342,6 @@ void ESPADFSpeaker::stop() {
   this->state_ = speaker::STATE_STOPPING;
   DataEvent data;
   data.stop = true;
-  //gpio_set_level(PA_ENABLE_GPIO, 0);  // Disable PA
   xQueueSendToFront(this->buffer_queue_.handle, &data, portMAX_DELAY);
 }
 
@@ -379,23 +383,6 @@ void ESPADFSpeaker::loop() {
     case speaker::STATE_STOPPED:
       break;
   }
-   // Read ADC value for button control
-   /* int adc_value = adc1_get_raw((adc1_channel_t)INPUT_BUTOP_ID);
-    if (adc_value < 0) {
-        ESP_LOGE(TAG, "ADC read error");
-        return;
-    }
-
-    //ESP_LOGD(TAG, "ADC value: %d", adc_value);
-    
-    // Determine button press based on ADC value
-    if (adc_value >= VOL_UP_THRESHOLD_LOW && adc_value <= VOL_UP_THRESHOLD_HIGH) {
-        ESP_LOGI(TAG, "Volume up detected");
-        this->volume_up();
-    } else if (adc_value >= VOL_DOWN_THRESHOLD_LOW && adc_value <= VOL_DOWN_THRESHOLD_HIGH) {
-        ESP_LOGI(TAG, "Volume down detected");
-        this->volume_down();
-    }*/
 }
 
 size_t ESPADFSpeaker::play(const uint8_t *data, size_t length) {
