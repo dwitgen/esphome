@@ -8,7 +8,7 @@ from esphome.components import esp32
 
 from esphome.const import CONF_ID, CONF_BOARD
 
-CODEOWNERS = ["@jesserockz"]
+CODEOWNERS = [""]
 DEPENDENCIES = ["esp32"]
 
 CONF_ESP_ADF_ID = "esp_adf_id"
