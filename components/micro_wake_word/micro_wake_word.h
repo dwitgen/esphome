@@ -46,7 +46,26 @@ class MicroWakeWord : public Component {
 
   void set_features_step_size(uint8_t step_size) { this->features_step_size_ = step_size; }
 
-  void set_microphone(microphone::Microphone *microphone) { this->microphone_ = microphone; }
+  void set_microphone(microphone::Microphone *microphone) {
+  if (microphone == nullptr) {
+    ESP_LOGW("micro_wake_word", "set_microphone called with a null microphone pointer.");
+    return;
+  }
+
+  // Attempt to cast to ESPADFMicrophone to verify the type
+  auto adf_microphone = dynamic_cast<esphome::esp_adf::ESPADFMicrophone *>(microphone);
+  if (adf_microphone != nullptr) {
+    ESP_LOGD("micro_wake_word", "ESPADFMicrophone assigned to micro_wake_word.");
+    ESP_LOGD("micro_wake_word", "Microphone state: %s",
+             adf_microphone->is_running() ? "Running" : "Stopped");
+  } else {
+    ESP_LOGW("micro_wake_word", "set_microphone called with a non-ESPADFMicrophone instance.");
+  }
+
+  // Assign the microphone to the class
+  this->microphone_ = microphone;
+  }
+
 
   Trigger<std::string> *get_wake_word_detected_trigger() const { return this->wake_word_detected_trigger_; }
 
