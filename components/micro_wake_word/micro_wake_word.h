@@ -11,7 +11,7 @@
 #include "esphome/core/ring_buffer.h"
 
 #include "esphome/components/microphone/microphone.h"
-#include "esphome/components/esp_adf/esp_adf_microphone.h"
+#include "src/esphome/components/esp_adf/esp_adf_microphone.h"
 
 #include <frontend_util.h>
 
