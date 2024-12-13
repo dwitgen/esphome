@@ -102,27 +102,32 @@ void MicroWakeWord::add_vad_model(const uint8_t *model_start, float probability_
 void MicroWakeWord::loop() {
   auto start_time = millis();  // Capture the start time
 
+  unsigned int model_start = 0;  // Declare variables outside the switch block
+
   switch (this->state_) {
     case State::IDLE:
       break;
+
     case State::START_MICROPHONE:
       ESP_LOGD(TAG, "Starting Microphone");
       this->microphone_->start();
       this->set_state_(State::STARTING_MICROPHONE);
       this->high_freq_.start();
       break;
+
     case State::STARTING_MICROPHONE:
       if (this->microphone_->is_running()) {
         this->set_state_(State::DETECTING_WAKE_WORD);
       }
       break;
+
     case State::DETECTING_WAKE_WORD:
       while (!this->has_enough_samples_()) {
         auto read_start = millis();
         this->read_microphone_();
         ESP_LOGD(TAG, "read_microphone_ took %d ms", millis() - read_start);
       }
-      auto model_start = millis();
+      model_start = millis();  // Initialize the variable here
       this->update_model_probabilities_();
       ESP_LOGD(TAG, "update_model_probabilities_ took %d ms", millis() - model_start);
 
@@ -132,6 +137,7 @@ void MicroWakeWord::loop() {
         this->set_state_(State::STOP_MICROPHONE);
       }
       break;
+
     case State::STOP_MICROPHONE:
       ESP_LOGD(TAG, "Stopping Microphone");
       this->microphone_->stop();
@@ -140,6 +146,7 @@ void MicroWakeWord::loop() {
       this->unload_models_();
       this->deallocate_buffers_();
       break;
+
     case State::STOPPING_MICROPHONE:
       if (this->microphone_->is_stopped()) {
         this->set_state_(State::IDLE);
@@ -154,6 +161,7 @@ void MicroWakeWord::loop() {
 
     ESP_LOGD(TAG, "loop took %d ms", millis() - start_time);  // Log the total loop time
   }
+
 
 
 void MicroWakeWord::start() {
