@@ -100,9 +100,8 @@ void MicroWakeWord::add_vad_model(const uint8_t *model_start, float probability_
 #endif
 
 void MicroWakeWord::loop() {
-  auto start_time = millis();  // Capture the start time
-
-  unsigned int model_start = 0;  // Declare variables outside the switch block
+  static uint32_t start_time = millis(); // Track loop timing
+  uint32_t loop_start_time = millis();   // Track individual loop execution time
 
   switch (this->state_) {
     case State::IDLE:
@@ -126,8 +125,14 @@ void MicroWakeWord::loop() {
         auto read_start = millis();
         this->read_microphone_();
         ESP_LOGD(TAG, "read_microphone_ took %d ms", millis() - read_start);
+
+        // If processing takes too long, break to continue in the next iteration
+        if (millis() - loop_start_time > 25) {
+          return;
+        }
       }
-      model_start = millis();  // Initialize the variable here
+
+      auto model_start = millis();
       this->update_model_probabilities_();
       ESP_LOGD(TAG, "update_model_probabilities_ took %d ms", millis() - model_start);
 
@@ -159,8 +164,9 @@ void MicroWakeWord::loop() {
       break;
   }
 
-    ESP_LOGD(TAG, "loop took %d ms", millis() - start_time);  // Log the total loop time
+    ESP_LOGD(TAG, "loop took %d ms", millis() - loop_start_time);
   }
+
 
 
 
