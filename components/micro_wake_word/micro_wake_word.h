@@ -55,18 +55,19 @@ class MicroWakeWord : public Component {
   }
 
   // Attempt to cast to ESPADFMicrophone to verify the type
-  auto adf_microphone = dynamic_cast<esphome::esp_adf::ESPADFMicrophone *>(microphone);
+  auto adf_microphone = static_cast<esphome::esp_adf::ESPADFMicrophone *>(microphone);
   if (adf_microphone != nullptr) {
     ESP_LOGD("micro_wake_word", "ESPADFMicrophone assigned to micro_wake_word.");
     ESP_LOGD("micro_wake_word", "Microphone state: %s",
              adf_microphone->is_running() ? "Running" : "Stopped");
   } else {
-    ESP_LOGW("micro_wake_word", "set_microphone called with a non-ESPADFMicrophone instance.");
+    ESP_LOGW("micro_wake_word", "set_microphone called with an incompatible microphone instance.");
   }
 
   // Assign the microphone to the class
   this->microphone_ = microphone;
   }
+
 
 
   Trigger<std::string> *get_wake_word_detected_trigger() const { return this->wake_word_detected_trigger_; }
