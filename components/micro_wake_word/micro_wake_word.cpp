@@ -100,6 +100,8 @@ void MicroWakeWord::add_vad_model(const uint8_t *model_start, float probability_
 #endif
 
 void MicroWakeWord::loop() {
+  auto start_time = millis();  // Capture the start time
+
   switch (this->state_) {
     case State::IDLE:
       break;
@@ -116,9 +118,14 @@ void MicroWakeWord::loop() {
       break;
     case State::DETECTING_WAKE_WORD:
       while (!this->has_enough_samples_()) {
+        auto read_start = millis();
         this->read_microphone_();
+        ESP_LOGD(TAG, "read_microphone_ took %d ms", millis() - read_start);
       }
+      auto model_start = millis();
       this->update_model_probabilities_();
+      ESP_LOGD(TAG, "update_model_probabilities_ took %d ms", millis() - model_start);
+
       if (this->detect_wake_words_()) {
         ESP_LOGD(TAG, "Wake Word '%s' Detected", (this->detected_wake_word_).c_str());
         this->detected_ = true;
@@ -144,7 +151,10 @@ void MicroWakeWord::loop() {
       }
       break;
   }
-}
+
+    ESP_LOGD(TAG, "loop took %d ms", millis() - start_time);  // Log the total loop time
+  }
+
 
 void MicroWakeWord::start() {
   if (!this->is_ready()) {
