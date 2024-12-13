@@ -102,6 +102,7 @@ void MicroWakeWord::add_vad_model(const uint8_t *model_start, float probability_
 void MicroWakeWord::loop() {
   static uint32_t start_time = millis(); // Track loop timing
   uint32_t loop_start_time = millis();   // Track individual loop execution time
+  uint32_t model_start = 0;              // Declare outside switch to avoid scope issues
 
   switch (this->state_) {
     case State::IDLE:
@@ -132,7 +133,7 @@ void MicroWakeWord::loop() {
         }
       }
 
-      auto model_start = millis();
+      model_start = millis();  // Assign value here
       this->update_model_probabilities_();
       ESP_LOGD(TAG, "update_model_probabilities_ took %d ms", millis() - model_start);
 
@@ -162,10 +163,15 @@ void MicroWakeWord::loop() {
         }
       }
       break;
+
+    default:
+      ESP_LOGW(TAG, "Unhandled state: %d", this->state_);
+      break;
   }
 
     ESP_LOGD(TAG, "loop took %d ms", millis() - loop_start_time);
   }
+
 
 
 
