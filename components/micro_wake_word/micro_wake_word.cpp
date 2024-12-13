@@ -214,31 +214,23 @@ void MicroWakeWord::stop() {
   this->set_state_(State::STOP_MICROPHONE);
 }
 
-void MicroWakeWord::set_state_(State state) {
-  ESP_LOGD(TAG, "State changed from %s to %s", LOG_STR_ARG(micro_wake_word_state_to_string(this->state_)),
-           LOG_STR_ARG(micro_wake_word_state_to_string(state)));
-  this->state_ = state;
-}
-
 size_t MicroWakeWord::read_microphone_() {
   size_t bytes_read = this->microphone_->read(this->input_buffer_, INPUT_BUFFER_SIZE * sizeof(int16_t));
   if (bytes_read == 0) {
-    return 0;
+    return 0; // No data to process
   }
 
   size_t bytes_free = this->ring_buffer_->free();
-
   if (bytes_free < bytes_read) {
     ESP_LOGW(TAG,
-             "Not enough free bytes in ring buffer to store incoming audio data (free bytes=%d, incoming bytes=%d). "
-             "Resetting the ring buffer. Wake word detection accuracy will be reduced.",
+             "Ring buffer full (free bytes=%d, incoming bytes=%d). Resetting buffer. Accuracy may be reduced.",
              bytes_free, bytes_read);
-
     this->ring_buffer_->reset();
   }
 
   return this->ring_buffer_->write((void *) this->input_buffer_, bytes_read);
 }
+
 
 bool MicroWakeWord::allocate_buffers_() {
   ExternalRAMAllocator<int16_t> audio_samples_allocator(ExternalRAMAllocator<int16_t>::ALLOW_FAILURE);
