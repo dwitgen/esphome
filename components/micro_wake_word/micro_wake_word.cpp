@@ -141,6 +141,8 @@ void MicroWakeWord::loop() {
         ESP_LOGD(TAG, "Wake Word '%s' Detected", (this->detected_wake_word_).c_str());
         this->detected_ = true;
         this->set_state_(State::STOP_MICROPHONE);
+        // Start the voice assistant pipeline
+        this->voice_assistant_->start();
       }
       break;
 
