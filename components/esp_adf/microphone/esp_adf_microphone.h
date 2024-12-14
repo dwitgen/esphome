@@ -22,10 +22,6 @@ class ESPADFMicrophone : public ESPADFPipeline, public microphone::Microphone, p
 
   size_t read(int16_t *buf, size_t len) override;
 
-  void set_voice_assistant(voice_assistant::VoiceAssistant *voice_assistant) {
-    this->voice_assistant_ = voice_assistant;
-  }
-
  protected:
   void start_();
   void read_();
@@ -38,9 +34,6 @@ class ESPADFMicrophone : public ESPADFPipeline, public microphone::Microphone, p
   TaskHandle_t read_task_handle_{nullptr};
   QueueHandle_t read_event_queue_;
   QueueHandle_t read_command_queue_;
-
-  private:
-  voice_assistant::VoiceAssistant *voice_assistant_{nullptr}; // Reference to the voice assistant
 
 };
 
