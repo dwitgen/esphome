@@ -49,10 +49,6 @@ class MicroWakeWord : public Component {
 
   void set_features_step_size(uint8_t step_size) { this->features_step_size_ = step_size; }
 
-  void set_voice_assistant(esphome::voice_assistant::VoiceAssistant *voice_assistant) {
-    this->voice_assistant_ = voice_assistant;
-  }
-
   void set_microphone(microphone::Microphone *microphone) {
   if (microphone == nullptr) {
     ESP_LOGW("micro_wake_word", "set_microphone called with a null microphone pointer.");
@@ -195,8 +191,7 @@ template<typename... Ts> class StopAction : public Action<Ts...>, public Parente
 template<typename... Ts> class IsRunningCondition : public Condition<Ts...>, public Parented<MicroWakeWord> {
  public:
   bool check(Ts... x) override { return this->parent_->is_running(); }
-private:
-  esphome::voice_assistant::VoiceAssistant *voice_assistant_{nullptr};
+
 };
 
 }  // namespace micro_wake_word
