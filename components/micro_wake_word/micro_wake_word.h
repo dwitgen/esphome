@@ -12,6 +12,7 @@
 
 #include "esphome/components/microphone/microphone.h"
 #include "esphome/components/esp_adf/microphone/esp_adf_microphone.h"
+#include "esphome/components/voice_assistant/voice_assistant.h"
 
 #include <frontend_util.h>
 
@@ -47,6 +48,10 @@ class MicroWakeWord : public Component {
   bool is_running() const { return this->state_ != State::IDLE; }
 
   void set_features_step_size(uint8_t step_size) { this->features_step_size_ = step_size; }
+
+  void set_voice_assistant(esphome::voice_assistant::VoiceAssistant *voice_assistant) {
+    this->voice_assistant_ = voice_assistant;
+  }
 
   void set_microphone(microphone::Microphone *microphone) {
   if (microphone == nullptr) {
@@ -190,6 +195,8 @@ template<typename... Ts> class StopAction : public Action<Ts...>, public Parente
 template<typename... Ts> class IsRunningCondition : public Condition<Ts...>, public Parented<MicroWakeWord> {
  public:
   bool check(Ts... x) override { return this->parent_->is_running(); }
+private:
+  esphome::voice_assistant::VoiceAssistant *voice_assistant_{nullptr};
 };
 
 }  // namespace micro_wake_word
