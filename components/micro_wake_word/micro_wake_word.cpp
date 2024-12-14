@@ -21,10 +21,10 @@ namespace micro_wake_word {
 
 static const char *const TAG = "micro_wake_word";
 
-static const size_t SAMPLE_RATE_HZ = 16000;  // 16 kHz
+static const size_t SAMPLE_RATE = 16000;  // 16 kHz
 static const size_t BUFFER_LENGTH = 64;      // 0.064 seconds
-static const size_t BUFFER_SIZE = SAMPLE_RATE_HZ / 1000 * BUFFER_LENGTH;
-static const size_t INPUT_BUFFER_SIZE = 16 * SAMPLE_RATE_HZ / 1000;  // 16ms * 16kHz / 1000ms
+static const size_t BUFFER_SIZE = SAMPLE_RATE / 1000 * BUFFER_LENGTH;
+static const size_t INPUT_BUFFER_SIZE = 16 * SAMPLE_RATE / 1000;  // 16ms * 16kHz / 1000ms
 
 float MicroWakeWord::get_setup_priority() const { return setup_priority::AFTER_CONNECTION; }
 
