@@ -125,7 +125,7 @@ void MicroWakeWord::loop() {
       while (!this->has_enough_samples_()) {
         auto read_start = millis();
         this->read_microphone_();
-        ESP_LOGD(TAG, "read_microphone_ took %d ms", millis() - read_start);
+        //ESP_LOGD(TAG, "read_microphone_ took %d ms", millis() - read_start);
 
         // If processing takes too long, break to continue in the next iteration
         if (millis() - loop_start_time > 25) {
@@ -135,7 +135,7 @@ void MicroWakeWord::loop() {
 
       model_start = millis();  // Assign value here
       this->update_model_probabilities_();
-      ESP_LOGD(TAG, "update_model_probabilities_ took %d ms", millis() - model_start);
+      //ESP_LOGD(TAG, "update_model_probabilities_ took %d ms", millis() - model_start);
 
       if (this->detect_wake_words_()) {
         ESP_LOGD(TAG, "Wake Word '%s' Detected", (this->detected_wake_word_).c_str());
@@ -169,7 +169,7 @@ void MicroWakeWord::loop() {
       break;
   }
 
-    ESP_LOGD(TAG, "loop took %d ms", millis() - loop_start_time);
+    //ESP_LOGD(TAG, "loop took %d ms", millis() - loop_start_time);
   }
 
 
