@@ -50,7 +50,7 @@ class MicroWakeWord : public Component {
   void set_features_step_size(uint8_t step_size) { this->features_step_size_ = step_size; }
 
   void set_voice_assistant(esphome::voice_assistant::VoiceAssistant *voice_assistant) {
-    this->voice_assistant_ = voice_assistant;
+    this->set_voice_assistant_ = voice_assistant;
   }
 
   void set_microphone(microphone::Microphone *microphone) {
