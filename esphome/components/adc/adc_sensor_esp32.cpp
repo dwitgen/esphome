@@ -17,6 +17,7 @@ void ADCSensor::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ADC '%s'...", this->get_name().c_str());
 
 #if ESP_IDF_VERSION_MAJOR >= 5
+  // ADC Initialization for ESP-IDF v5
   adc_oneshot_unit_init_cfg_t init_cfg = {
     .unit_id = ADC_UNIT_1
   };
@@ -26,7 +27,7 @@ void ADCSensor::setup() {
     .atten = this->attenuation_,
     .bitwidth = ADC_BITWIDTH_DEFAULT
   };
-  ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle_, this->channel1_, &channel_cfg));
+  ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle_, this->channel_, &channel_cfg));  // Corrected here
 
   adc_cali_curve_fitting_config_t cal_cfg = {
     .unit_id = ADC_UNIT_1,
@@ -36,6 +37,7 @@ void ADCSensor::setup() {
   ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&cal_cfg, &cal_handle_));
 
 #else
+  // ADC Initialization for ESP-IDF v4
   if (this->channel1_ != ADC1_CHANNEL_MAX) {
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(this->channel1_, this->attenuation_);
@@ -57,8 +59,9 @@ void ADCSensor::dump_config() {
 
 float ADCSensor::sample() {
 #if ESP_IDF_VERSION_MAJOR >= 5
+  // ADC Reading for ESP-IDF v5
   int raw = 0;
-  ESP_ERROR_CHECK(adc_oneshot_read(adc_handle_, this->channel1_, &raw));
+  ESP_ERROR_CHECK(adc_oneshot_read(adc_handle_, this->channel_, &raw));  // Corrected here
 
   int voltage = 0;
   ESP_ERROR_CHECK(adc_cali_raw_to_voltage(cal_handle_, raw, &voltage));
@@ -66,6 +69,7 @@ float ADCSensor::sample() {
   return this->output_raw_ ? raw : voltage / 1000.0f;
 
 #else
+  // ADC Reading for ESP-IDF v4
   int raw = 0;
   if (this->channel1_ != ADC1_CHANNEL_MAX) {
     raw = adc1_get_raw(this->channel1_);
