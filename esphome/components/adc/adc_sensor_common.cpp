@@ -18,7 +18,9 @@ void ADCSensor::set_sample_count(uint8_t sample_count) {
   }
 }
 
-float ADCSensor::get_setup_priority() const { return setup_priority::DATA; }
+float ADCSensor::get_setup_priority() const { 
+  return setup_priority::DATA; 
+}
 
 }  // namespace adc
 }  // namespace esphome

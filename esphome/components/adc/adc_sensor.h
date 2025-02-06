@@ -21,9 +21,9 @@ namespace adc {
 
 #ifdef USE_ESP32
 #if (ESP_IDF_VERSION_MAJOR >= 5)
-  static const adc_atten_t ADC_ATTEN_DB_12_COMPAT = ADC_ATTEN_DB_12;  
+  static const adc_atten_t ADC_ATTEN_DB_12_COMPAT = ADC_ATTEN_DB_12;
 #else
-  static const adc_atten_t ADC_ATTEN_DB_12_COMPAT = ADC_ATTEN_DB_11;  
+  static const adc_atten_t ADC_ATTEN_DB_12_COMPAT = ADC_ATTEN_DB_11;
 #endif
 #endif  // USE_ESP32
 
@@ -40,7 +40,15 @@ class ADCSensor : public sensor::Sensor, public PollingComponent, public voltage
     this->channel1_ = ADC1_CHANNEL_MAX;
   }
   void set_autorange(bool autorange) { this->autorange_ = autorange; }
-#endif
+#endif  // USE_ESP32
+
+#ifdef USE_ESP8266
+  std::string unique_id() override;
+#endif  // USE_ESP8266
+
+#ifdef USE_RP2040
+  void set_is_temperature() { this->is_temperature_ = true; }
+#endif  // USE_RP2040
 
   void update() override;
   void setup() override;
@@ -56,6 +64,10 @@ class ADCSensor : public sensor::Sensor, public PollingComponent, public voltage
   bool output_raw_{false};
   uint8_t sample_count_{1};
 
+#ifdef USE_RP2040
+  bool is_temperature_{false};
+#endif  // USE_RP2040
+
 #ifdef USE_ESP32
   adc_atten_t attenuation_{ADC_ATTEN_DB_0};
   adc1_channel_t channel1_{ADC1_CHANNEL_MAX};
@@ -70,74 +82,6 @@ class ADCSensor : public sensor::Sensor, public PollingComponent, public voltage
   #endif
 #endif
 };
-
-// ========================== SETUP ==========================
-
-void ADCSensor::setup() {
-#ifdef USE_ESP32
-  #if ESP_IDF_VERSION_MAJOR >= 5
-    adc_oneshot_unit_init_cfg_t adc_init_cfg = {
-      .unit_id = ADC_UNIT_1
-    };
-    ESP_ERROR_CHECK(adc_oneshot_new_unit(&adc_init_cfg, &adc_handle_));
-
-    adc_oneshot_chan_cfg_t channel_config = {
-      .atten = attenuation_,
-      .bitwidth = ADC_BITWIDTH_DEFAULT
-    };
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle_, channel1_, &channel_config));
-
-    // Calibration
-    adc_cali_line_fitting_config_t cal_cfg = {
-      .unit_id = ADC_UNIT_1,
-      .atten = attenuation_,
-      .bitwidth = ADC_BITWIDTH_DEFAULT,
-    };
-    ESP_ERROR_CHECK(adc_cali_create_scheme_line_fitting(&cal_cfg, &cal_handle_));
-
-  #else
-    esp_adc_cal_characteristics_t *chars = &cal_characteristics_[attenuation_];
-    esp_adc_cal_value_t val_type = esp_adc_cal_characterize(
-        ADC_UNIT_1, attenuation_, ADC_WIDTH_BIT_12, 1100, chars);
-  #endif
-#endif
-}
-
-// ========================== SAMPLE ==========================
-
-float ADCSensor::sample() {
-#ifdef USE_ESP32
-  int raw = 0;
-  #if ESP_IDF_VERSION_MAJOR >= 5
-    ESP_ERROR_CHECK(adc_oneshot_read(adc_handle_, channel1_, &raw));
-    int voltage = 0;
-    ESP_ERROR_CHECK(adc_cali_raw_to_voltage(cal_handle_, raw, &voltage));
-    return output_raw_ ? raw : voltage / 1000.0f;  // Convert to volts
-  #else
-    raw = adc1_get_raw(channel1_);
-    uint32_t voltage = esp_adc_cal_raw_to_voltage(raw, &cal_characteristics_[attenuation_]);
-    return output_raw_ ? raw : voltage / 1000.0f;
-  #endif
-#endif
-  return 0.0f;
-}
-
-// ========================== UPDATE ==========================
-
-void ADCSensor::update() {
-  float value = this->sample();
-  this->publish_state(value);
-}
-
-// ========================== CONFIG ==========================
-
-void ADCSensor::dump_config() {
-  ESP_LOGCONFIG("ADC Sensor", "Configured on Channel %d", channel1_);
-}
-
-float ADCSensor::get_setup_priority() const {
-  return setup_priority::HARDWARE_LATE;
-}
 
 }  // namespace adc
 }  // namespace esphome
