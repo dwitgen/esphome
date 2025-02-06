@@ -22,10 +22,7 @@ namespace adc {
 #ifdef USE_ESP32
 // Compatibility for attenuation settings
 #if (ESP_IDF_VERSION_MAJOR == 4 && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 7)) || \
-    (ESP_IDF_VERSION_MAJOR == 5 && \
-     ((ESP_IDF_VERSION_MINOR == 0 && ESP_IDF_VERSION_PATCH >= 5) || \
-      (ESP_IDF_VERSION_MINOR == 1 && ESP_IDF_VERSION_PATCH >= 3) || \
-      (ESP_IDF_VERSION_MINOR >= 2)))
+    (ESP_IDF_VERSION_MAJOR >= 5)
 static const adc_atten_t ADC_ATTEN_DB_12_COMPAT = ADC_ATTEN_DB_12;
 #else
 static const adc_atten_t ADC_ATTEN_DB_12_COMPAT = ADC_ATTEN_DB_11;
@@ -38,16 +35,20 @@ class ADCSensor : public sensor::Sensor, public PollingComponent, public voltage
   /// Set attenuation
   void set_attenuation(adc_atten_t attenuation) { this->attenuation_ = attenuation; }
 
-  /// Configure ADC channels (separate for ADC1 and ADC2)
-  void set_channel1(adc1_channel_t channel) {
-    this->channel1_ = channel;
-    this->channel2_ = ADC2_CHANNEL_MAX;
-  }
-
-  void set_channel2(adc2_channel_t channel) {
-    this->channel2_ = channel;
-    this->channel1_ = ADC1_CHANNEL_MAX;
-  }
+  #if ESP_IDF_VERSION_MAJOR >= 5
+    /// For ESP-IDF v5: Single channel setup
+    void set_channel(adc_channel_t channel) { this->channel_ = channel; }
+  #else
+    /// For older ESP-IDF versions: Separate ADC1 and ADC2 channels
+    void set_channel1(adc1_channel_t channel) {
+      this->channel1_ = channel;
+      this->channel2_ = ADC2_CHANNEL_MAX;
+    }
+    void set_channel2(adc2_channel_t channel) {
+      this->channel2_ = channel;
+      this->channel1_ = ADC1_CHANNEL_MAX;
+    }
+  #endif
 
   /// Enable auto-range mode
   void set_autorange(bool autorange) { this->autorange_ = autorange; }
@@ -86,14 +87,15 @@ class ADCSensor : public sensor::Sensor, public PollingComponent, public voltage
 
 #ifdef USE_ESP32
   adc_atten_t attenuation_{ADC_ATTEN_DB_0};
-  adc1_channel_t channel1_{ADC1_CHANNEL_MAX};
-  adc2_channel_t channel2_{ADC2_CHANNEL_MAX};
   bool autorange_{false};
 
   #if ESP_IDF_VERSION_MAJOR >= 5
     adc_oneshot_unit_handle_t adc_handle_;
     adc_cali_handle_t cal_handle_;
+    adc_channel_t channel_;  // Single channel for IDF v5
   #else
+    adc1_channel_t channel1_{ADC1_CHANNEL_MAX};
+    adc2_channel_t channel2_{ADC2_CHANNEL_MAX};
     esp_adc_cal_characteristics_t cal_characteristics_[ADC_ATTEN_MAX] = {};
   #endif
 #endif  // USE_ESP32
