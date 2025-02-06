@@ -5,7 +5,6 @@ import esphome.config_validation as cv
 import esphome.final_validate as fv
 from esphome.core import CORE
 from esphome.components import sensor, voltage_sampler
-from esphome.components.esp32 import esp32_get_idf_version
 from esphome.components.esp32 import get_esp32_variant
 from esphome.const import (
     CONF_ATTENUATION,
@@ -35,6 +34,11 @@ CONF_SAMPLES = "samples"
 
 _attenuation = cv.enum(ATTENUATION_MODES, lower=True)
 
+import esphome.codegen as cg
+
+# Function to detect ESP-IDF major version
+def is_idf_version_5_or_higher():
+    return cg.global_ns.ESP_IDF_VERSION_MAJOR >= 5
 
 def validate_config(config):
     if config[CONF_RAW] and config.get(CONF_ATTENUATION, None) == "auto":
@@ -57,7 +61,9 @@ def validate_config(config):
 def final_validate_config(config):
     if CORE.is_esp32:
         variant = get_esp32_variant()
-        idf_version = esp32_get_idf_version()
+
+        # Version detection
+        is_idf_5 = cg.global_ns.ESP_IDF_VERSION_MAJOR >= 5
 
         if (
             CONF_WIFI in fv.full_config.get()
@@ -67,12 +73,12 @@ def final_validate_config(config):
                 f"{variant} doesn't support ADC on this pin when Wi-Fi is configured"
             )
 
-        # Ensure compatibility with IDF v5
-        if idf_version >= (5, 0):
+        if is_idf_5:
             if variant not in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL:
                 raise cv.Invalid(f"{variant} is not supported for ADC in IDF v5")
 
     return config
+
 
 
 ADCSensor = adc_ns.class_(
@@ -109,16 +115,15 @@ async def to_code(config):
     await cg.register_component(var, config)
     await sensor.register_sensor(var, config)
 
-    if config[CONF_PIN] == "VCC":
-        cg.add_define("USE_ADC_SENSOR_VCC")
-    elif config[CONF_PIN] == "TEMPERATURE":
-        cg.add(var.set_is_temperature())
-    else:
-        pin = await cg.gpio_pin_expression(config[CONF_PIN])
-        cg.add(var.set_pin(pin))
-
+    pin = await cg.gpio_pin_expression(config[CONF_PIN])
+    cg.add(var.set_pin(pin))
     cg.add(var.set_output_raw(config[CONF_RAW]))
     cg.add(var.set_sample_count(config[CONF_SAMPLES]))
+
+    # Version check
+    is_idf_5 = cg.global_ns.ESP_IDF_VERSION_MAJOR >= 5
+    variant = get_esp32_variant()
+    pin_num = config[CONF_PIN][CONF_NUMBER]
 
     if attenuation := config.get(CONF_ATTENUATION):
         if attenuation == "auto":
@@ -127,33 +132,11 @@ async def to_code(config):
             cg.add(var.set_attenuation(attenuation))
 
     if CORE.is_esp32:
-        variant = get_esp32_variant()
-        idf_version = esp32_get_idf_version()
-        pin_num = config[CONF_PIN][CONF_NUMBER]
-
-        if idf_version >= (5, 0):
-            # IDF v5+ ADC handling
-            if pin_num in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL.get(variant, {}):
-                chan = ESP32_VARIANT_ADC1_PIN_TO_CHANNEL[variant][pin_num]
-                cg.add(var.set_channel1(chan))
-            elif pin_num in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL.get(variant, {}):
-                chan = ESP32_VARIANT_ADC2_PIN_TO_CHANNEL[variant][pin_num]
-                cg.add(var.set_channel2(chan))
-            else:
-                raise cv.Invalid(f"Pin {pin_num} is not supported for ADC on {variant}")
+        if pin_num in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL.get(variant, {}):
+            chan = ESP32_VARIANT_ADC1_PIN_TO_CHANNEL[variant][pin_num]
+            cg.add(var.set_channel1(chan))
+        elif pin_num in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL.get(variant, {}):
+            chan = ESP32_VARIANT_ADC2_PIN_TO_CHANNEL[variant][pin_num]
+            cg.add(var.set_channel2(chan))
         else:
-            # Legacy handling for IDF 4.x
-            if (
-                variant in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL
-                and pin_num in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL[variant]
-            ):
-                chan = ESP32_VARIANT_ADC1_PIN_TO_CHANNEL[variant][pin_num]
-                cg.add(var.set_channel1(chan))
-            elif (
-                variant in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL
-                and pin_num in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL[variant]
-            ):
-                chan = ESP32_VARIANT_ADC2_PIN_TO_CHANNEL[variant][pin_num]
-                cg.add(var.set_channel2(chan))
-            else:
-                raise cv.Invalid(f"ADC not supported on pin {pin_num} for {variant}")
+            raise cv.Invalid(f"Pin {pin_num} is not supported for ADC on {variant}")
