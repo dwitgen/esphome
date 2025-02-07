@@ -8,6 +8,12 @@ static const char *const TAG = "adc.common";
 
 void ADCSensor::update() {
   float value_v = this->sample();
+
+  if (std::isnan(value_v)) {
+    ESP_LOGW(TAG, "'%s': Failed to read ADC value (NaN)", this->get_name().c_str());
+    return;
+  }
+
   ESP_LOGV(TAG, "'%s': Got voltage=%.4fV", this->get_name().c_str(), value_v);
   this->publish_state(value_v);
 }
@@ -15,6 +21,8 @@ void ADCSensor::update() {
 void ADCSensor::set_sample_count(uint8_t sample_count) {
   if (sample_count != 0) {
     this->sample_count_ = sample_count;
+  } else {
+    ESP_LOGW(TAG, "Attempted to set sample count to 0, ignoring.");
   }
 }
 

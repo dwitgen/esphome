@@ -31,15 +31,9 @@ AUTO_LOAD = ["voltage_sampler"]
 
 CONF_SAMPLES = "samples"
 
-
 _attenuation = cv.enum(ATTENUATION_MODES, lower=True)
 
-import esphome.codegen as cg
-
-# Function to detect ESP-IDF major version
-def is_idf_version_5_or_higher():
-    return cg.global_ns.ESP_IDF_VERSION_MAJOR >= 5
-
+# Validation for ADC configuration
 def validate_config(config):
     if config[CONF_RAW] and config.get(CONF_ATTENUATION, None) == "auto":
         raise cv.Invalid("Automatic attenuation cannot be used when raw output is set")
@@ -48,43 +42,36 @@ def validate_config(config):
         raise cv.Invalid(
             "Automatic attenuation cannot be used when multisampling is set"
         )
+
     if config.get(CONF_ATTENUATION) == "11db":
         _LOGGER.warning(
             "`attenuation: 11db` is deprecated, use `attenuation: 12db` instead"
         )
-        # Alter value here so `config` command prints the recommended change
         config[CONF_ATTENUATION] = _attenuation("12db")
 
     return config
 
-
+# Final validation for ESP32-specific checks
 def final_validate_config(config):
     if CORE.is_esp32:
         variant = get_esp32_variant()
-
-        # Version detection
-        is_idf_5 = cg.global_ns.ESP_IDF_VERSION_MAJOR >= 5
-
         if (
             CONF_WIFI in fv.full_config.get()
-            and config[CONF_PIN][CONF_NUMBER] in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL.get(variant, {})
+            and config[CONF_PIN][CONF_NUMBER]
+            in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL.get(variant, {})
         ):
             raise cv.Invalid(
                 f"{variant} doesn't support ADC on this pin when Wi-Fi is configured"
             )
 
-        if is_idf_5:
-            if variant not in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL:
-                raise cv.Invalid(f"{variant} is not supported for ADC in IDF v5")
-
     return config
 
-
-
+# ADC Sensor Class
 ADCSensor = adc_ns.class_(
     "ADCSensor", sensor.Sensor, cg.PollingComponent, voltage_sampler.VoltageSampler
 )
 
+# Configuration Schema
 CONFIG_SCHEMA = cv.All(
     sensor.sensor_schema(
         ADCSensor,
@@ -109,34 +96,43 @@ CONFIG_SCHEMA = cv.All(
 
 FINAL_VALIDATE_SCHEMA = final_validate_config
 
-
+# Code Generation
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await sensor.register_sensor(var, config)
 
-    pin = await cg.gpio_pin_expression(config[CONF_PIN])
-    cg.add(var.set_pin(pin))
+    # Pin configuration
+    if config[CONF_PIN] == "VCC":
+        cg.add_define("USE_ADC_SENSOR_VCC")
+    elif config[CONF_PIN] == "TEMPERATURE":
+        cg.add(var.set_is_temperature())
+    else:
+        pin = await cg.gpio_pin_expression(config[CONF_PIN])
+        cg.add(var.set_pin(pin))
+
+    # Additional ADC configurations
     cg.add(var.set_output_raw(config[CONF_RAW]))
     cg.add(var.set_sample_count(config[CONF_SAMPLES]))
 
-    # Version check
-    is_idf_5 = cg.global_ns.ESP_IDF_VERSION_MAJOR >= 5
-    variant = get_esp32_variant()
-    pin_num = config[CONF_PIN][CONF_NUMBER]
-
+    # Attenuation
     if attenuation := config.get(CONF_ATTENUATION):
         if attenuation == "auto":
             cg.add(var.set_autorange(cg.global_ns.true))
         else:
             cg.add(var.set_attenuation(attenuation))
 
+    # ADC Channel Configuration
     if CORE.is_esp32:
+        variant = get_esp32_variant()
+        pin_num = config[CONF_PIN][CONF_NUMBER]
+
+        # Check ADC1 channels
         if pin_num in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL.get(variant, {}):
             chan = ESP32_VARIANT_ADC1_PIN_TO_CHANNEL[variant][pin_num]
-            cg.add(var.set_channel(chan))
+            cg.add(var.set_channel(chan))  # Use set_channel instead of set_channel1
+        # Check ADC2 channels
         elif pin_num in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL.get(variant, {}):
             chan = ESP32_VARIANT_ADC2_PIN_TO_CHANNEL[variant][pin_num]
-            cg.add(var.set_channel(chan))
-        else:
-            raise cv.Invalid(f"Pin {pin_num} is not supported for ADC on {variant}")
+            cg.add(var.set_channel(chan))  # Unified approach
+
