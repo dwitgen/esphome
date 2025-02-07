@@ -103,7 +103,7 @@ ESP32_VARIANT_ADC2_PIN_TO_CHANNEL = {
         15: adc_channel_t.ADC_CHANNEL_4,
         16: adc_channel_t.ADC_CHANNEL_5,
         17: adc_channel_t.ADC_CHANNEL_6,
-        18: adc_channel_t.ADC_CHANNEL_7,
+        #18: adc_channel_t.ADC_CHANNEL_7,
         19: adc_channel_t.ADC_CHANNEL_8,
         20: adc_channel_t.ADC_CHANNEL_9,
     },
