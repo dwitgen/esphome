@@ -28,28 +28,89 @@ ATTENUATION_MODES = {
     "auto": "auto",
 }
 
-# Use unified adc_channel_t for ESP-IDF 5.x
+# Using adc_channel_t for both ADC1 and ADC2 with differentiation
 adc_channel_t = cg.global_ns.enum("adc_channel_t")
-adc_unit_t = cg.global_ns.enum("adc_unit_t")
 
-# Pin-to-Channel Mapping with ADC Unit Information
-ESP32_VARIANT_ADC_PIN_TO_CHANNEL = {
+# ADC1 Pin-to-Channel Mapping
+ESP32_VARIANT_ADC1_PIN_TO_CHANNEL = {
     VARIANT_ESP32: {
-        36: (adc_unit_t.ADC_UNIT_1, adc_channel_t.ADC_CHANNEL_0),
-        37: (adc_unit_t.ADC_UNIT_1, adc_channel_t.ADC_CHANNEL_1),
-        38: (adc_unit_t.ADC_UNIT_1, adc_channel_t.ADC_CHANNEL_2),
-        39: (adc_unit_t.ADC_UNIT_1, adc_channel_t.ADC_CHANNEL_3),
-        32: (adc_unit_t.ADC_UNIT_1, adc_channel_t.ADC_CHANNEL_4),
-        33: (adc_unit_t.ADC_UNIT_1, adc_channel_t.ADC_CHANNEL_5),
-        34: (adc_unit_t.ADC_UNIT_1, adc_channel_t.ADC_CHANNEL_6),
-        35: (adc_unit_t.ADC_UNIT_1, adc_channel_t.ADC_CHANNEL_7),
-        4:  (adc_unit_t.ADC_UNIT_2, adc_channel_t.ADC_CHANNEL_0),
-        0:  (adc_unit_t.ADC_UNIT_2, adc_channel_t.ADC_CHANNEL_1),
-        2:  (adc_unit_t.ADC_UNIT_2, adc_channel_t.ADC_CHANNEL_2),
+        36: adc_channel_t.ADC_CHANNEL_0,
+        37: adc_channel_t.ADC_CHANNEL_1,
+        38: adc_channel_t.ADC_CHANNEL_2,
+        39: adc_channel_t.ADC_CHANNEL_3,
+        32: adc_channel_t.ADC_CHANNEL_4,
+        33: adc_channel_t.ADC_CHANNEL_5,
+        34: adc_channel_t.ADC_CHANNEL_6,
+        35: adc_channel_t.ADC_CHANNEL_7,
     },
-    # Add other variants similarly...
+    VARIANT_ESP32S2: {
+        1: adc_channel_t.ADC_CHANNEL_0,
+        2: adc_channel_t.ADC_CHANNEL_1,
+        3: adc_channel_t.ADC_CHANNEL_2,
+        4: adc_channel_t.ADC_CHANNEL_3,
+        5: adc_channel_t.ADC_CHANNEL_4,
+        6: adc_channel_t.ADC_CHANNEL_5,
+        7: adc_channel_t.ADC_CHANNEL_6,
+        8: adc_channel_t.ADC_CHANNEL_7,
+        9: adc_channel_t.ADC_CHANNEL_8,
+        10: adc_channel_t.ADC_CHANNEL_9,
+    },
+    VARIANT_ESP32S3: {
+        1: adc_channel_t.ADC_CHANNEL_0,
+        2: adc_channel_t.ADC_CHANNEL_1,
+        3: adc_channel_t.ADC_CHANNEL_2,
+        4: adc_channel_t.ADC_CHANNEL_3,
+        5: adc_channel_t.ADC_CHANNEL_4,
+        6: adc_channel_t.ADC_CHANNEL_5,
+        7: adc_channel_t.ADC_CHANNEL_6,
+        8: adc_channel_t.ADC_CHANNEL_7,
+        9: adc_channel_t.ADC_CHANNEL_8,
+        10: adc_channel_t.ADC_CHANNEL_9,
+    },
 }
 
+# ADC2 Pin-to-Channel Mapping
+ESP32_VARIANT_ADC2_PIN_TO_CHANNEL = {
+    VARIANT_ESP32: {
+        4: adc_channel_t.ADC_CHANNEL_0,
+        0: adc_channel_t.ADC_CHANNEL_1,
+        2: adc_channel_t.ADC_CHANNEL_2,
+        15: adc_channel_t.ADC_CHANNEL_3,
+        13: adc_channel_t.ADC_CHANNEL_4,
+        12: adc_channel_t.ADC_CHANNEL_5,
+        14: adc_channel_t.ADC_CHANNEL_6,
+        27: adc_channel_t.ADC_CHANNEL_7,
+        25: adc_channel_t.ADC_CHANNEL_8,
+        26: adc_channel_t.ADC_CHANNEL_9,
+    },
+    VARIANT_ESP32S2: {
+        11: adc_channel_t.ADC_CHANNEL_0,
+        12: adc_channel_t.ADC_CHANNEL_1,
+        13: adc_channel_t.ADC_CHANNEL_2,
+        14: adc_channel_t.ADC_CHANNEL_3,
+        15: adc_channel_t.ADC_CHANNEL_4,
+        16: adc_channel_t.ADC_CHANNEL_5,
+        17: adc_channel_t.ADC_CHANNEL_6,
+        18: adc_channel_t.ADC_CHANNEL_7,
+        19: adc_channel_t.ADC_CHANNEL_8,
+        20: adc_channel_t.ADC_CHANNEL_9,
+    },
+    VARIANT_ESP32S3: {
+        11: adc_channel_t.ADC_CHANNEL_0,
+        12: adc_channel_t.ADC_CHANNEL_1,
+        13: adc_channel_t.ADC_CHANNEL_2,
+        14: adc_channel_t.ADC_CHANNEL_3,
+        15: adc_channel_t.ADC_CHANNEL_4,
+        16: adc_channel_t.ADC_CHANNEL_5,
+        17: adc_channel_t.ADC_CHANNEL_6,
+        18: adc_channel_t.ADC_CHANNEL_7,
+        19: adc_channel_t.ADC_CHANNEL_8,
+        20: adc_channel_t.ADC_CHANNEL_9,
+    },
+}
+
+
+# ADC Pin Validation Function
 def validate_adc_pin(value):
     if str(value).upper() == "VCC":
         if CORE.is_rp2040:
@@ -64,10 +125,16 @@ def validate_adc_pin(value):
         pin_number = conf[CONF_NUMBER]
         variant = get_esp32_variant()
 
-        if variant not in ESP32_VARIANT_ADC_PIN_TO_CHANNEL:
+        if (
+            variant not in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL
+            and variant not in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL
+        ):
             raise cv.Invalid(f"This ESP32 variant ({variant}) is not supported")
 
-        if pin_number not in ESP32_VARIANT_ADC_PIN_TO_CHANNEL[variant]:
+        if (
+            pin_number not in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL.get(variant, {})
+            and pin_number not in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL.get(variant, {})
+        ):
             raise cv.Invalid(f"{variant} doesn't support ADC on pin {pin_number}")
 
         return conf
