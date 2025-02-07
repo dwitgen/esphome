@@ -134,9 +134,9 @@ async def to_code(config):
     if CORE.is_esp32:
         if pin_num in ESP32_VARIANT_ADC1_PIN_TO_CHANNEL.get(variant, {}):
             chan = ESP32_VARIANT_ADC1_PIN_TO_CHANNEL[variant][pin_num]
-            cg.add(var.set_channel1(chan))
+            cg.add(var.set_channel(chan))
         elif pin_num in ESP32_VARIANT_ADC2_PIN_TO_CHANNEL.get(variant, {}):
             chan = ESP32_VARIANT_ADC2_PIN_TO_CHANNEL[variant][pin_num]
-            cg.add(var.set_channel2(chan))
+            cg.add(var.set_channel(chan))
         else:
             raise cv.Invalid(f"Pin {pin_num} is not supported for ADC on {variant}")
