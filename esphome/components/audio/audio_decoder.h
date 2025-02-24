@@ -22,7 +22,9 @@
 #ifdef USE_AUDIO_MP3_SUPPORT
 #include <mp3_decoder.h>
 #endif
+#ifdef USE_AUDIO_WAV_SUPPORT
 #include <wav_decoder.h>
+#endif
 
 namespace esphome {
 namespace audio {
