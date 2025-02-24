@@ -22,9 +22,8 @@
 #ifdef USE_AUDIO_MP3_SUPPORT
 #include <mp3_decoder.h>
 #endif
-#ifdef USE_AUDIO_WAV_SUPPORT
 #include <wav_decoder.h>
-#endif
+
 
 namespace esphome {
 namespace audio {
@@ -102,9 +101,9 @@ class AudioDecoder {
   void set_pause_output_state(bool pause_state) { this->pause_output_ = pause_state; }
 
  protected:
-#ifdef USE_AUDIO_WAV_SUPPORT
+
   std::unique_ptr<esp_audio_libs::wav_decoder::WAVDecoder> wav_decoder_;
-#endif
+#
 #ifdef USE_AUDIO_FLAC_SUPPORT
   FileDecoderState decode_flac_();
   std::unique_ptr<esp_audio_libs::flac::FLACDecoder> flac_decoder_;
@@ -113,7 +112,7 @@ class AudioDecoder {
   FileDecoderState decode_mp3_();
   esp_audio_libs::helix_decoder::HMP3Decoder mp3_decoder_;
 #endif
-#ifdef USE_AUDIO_WAV_SUPPORT
+
   FileDecoderState decode_wav_();
 
   std::unique_ptr<AudioSourceTransferBuffer> input_transfer_buffer_;
@@ -133,7 +132,7 @@ class AudioDecoder {
 
   uint32_t accumulated_frames_written_{0};
   uint32_t playback_ms_{0};
-#endif
+
 };
 }  // namespace audio
 }  // namespace esphome
