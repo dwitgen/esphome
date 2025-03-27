@@ -233,42 +233,47 @@ bool I2SAudioSpeaker::has_buffered_data() const {
 
 void I2SAudioSpeaker::speaker_task(void *params) {
   I2SAudioSpeaker *this_speaker = (I2SAudioSpeaker *) params;
+  ESP_LOGI(TAG, "🚀 speaker_task started");
+
   this_speaker->task_created_ = true;
 
+  ESP_LOGI(TAG, "🕒 Waiting for COMMAND_START or STOP...");
   uint32_t event_group_bits =
       xEventGroupWaitBits(this_speaker->event_group_,
                           SpeakerEventGroupBits::COMMAND_START | SpeakerEventGroupBits::COMMAND_STOP |
-                              SpeakerEventGroupBits::COMMAND_STOP_GRACEFULLY,  // Bit message to read
-                          pdTRUE,                                              // Clear the bits on exit
-                          pdFALSE,                                             // Don't wait for all the bits,
-                          portMAX_DELAY);                                      // Block indefinitely until a bit is set
+                              SpeakerEventGroupBits::COMMAND_STOP_GRACEFULLY,
+                          pdTRUE, pdFALSE, portMAX_DELAY);
+
+  ESP_LOGI(TAG, "📡 Event bits received: 0x%08X", event_group_bits);
 
   if (event_group_bits & (SpeakerEventGroupBits::COMMAND_STOP | SpeakerEventGroupBits::COMMAND_STOP_GRACEFULLY)) {
-    // Received a stop signal before the task was requested to start
+    ESP_LOGW(TAG, "❌ Received STOP before start. Exiting speaker_task.");
     this_speaker->delete_task_(0);
+    return;
   }
 
+  ESP_LOGI(TAG, "✅ Setting STATE_STARTING");
   xEventGroupSetBits(this_speaker->event_group_, SpeakerEventGroupBits::STATE_STARTING);
 
   audio::AudioStreamInfo audio_stream_info = this_speaker->audio_stream_info_;
 
   const uint32_t dma_buffers_duration_ms = DMA_BUFFER_DURATION_MS * DMA_BUFFERS_COUNT;
-  // Ensure ring buffer duration is at least the duration of all DMA buffers
   const uint32_t ring_buffer_duration = std::max(dma_buffers_duration_ms, this_speaker->buffer_duration_ms_);
-
-  // The DMA buffers may have more bits per sample, so calculate buffer sizes based in the input audio stream info
   const size_t data_buffer_size = audio_stream_info.ms_to_bytes(dma_buffers_duration_ms);
   const size_t ring_buffer_size = audio_stream_info.ms_to_bytes(ring_buffer_duration);
-
   const size_t single_dma_buffer_input_size = data_buffer_size / DMA_BUFFERS_COUNT;
 
+  ESP_LOGI(TAG, "📦 Allocating buffers...");
   if (this_speaker->send_esp_err_to_event_group_(this_speaker->allocate_buffers_(data_buffer_size, ring_buffer_size))) {
-    // Failed to allocate buffers
+    ESP_LOGE(TAG, "💥 Buffer allocation failed. Exiting.");
     xEventGroupSetBits(this_speaker->event_group_, SpeakerEventGroupBits::ERR_ESP_NO_MEM);
     this_speaker->delete_task_(data_buffer_size);
+    return;
   }
 
+  ESP_LOGI(TAG, "🔌 Starting I2S driver...");
   if (!this_speaker->send_esp_err_to_event_group_(this_speaker->start_i2s_driver_(audio_stream_info))) {
+    ESP_LOGI(TAG, "🎙️ I2S driver started successfully");
     xEventGroupSetBits(this_speaker->event_group_, SpeakerEventGroupBits::STATE_RUNNING);
 
     bool stop_gracefully = false;
@@ -277,86 +282,84 @@ void I2SAudioSpeaker::speaker_task(void *params) {
 
     this_speaker->accumulated_frames_written_ = 0;
 
-    // Keep looping if paused, there is no timeout configured, or data was received more recently than the configured
-    // timeout
     while (this_speaker->pause_state_ || !this_speaker->timeout_.has_value() ||
            (millis() - last_data_received_time) <= this_speaker->timeout_.value()) {
-      event_group_bits = xEventGroupGetBits(this_speaker->event_group_);
+      ESP_LOGVV(TAG, "🔄 Looping...");
 
+      event_group_bits = xEventGroupGetBits(this_speaker->event_group_);
       if (event_group_bits & SpeakerEventGroupBits::COMMAND_STOP) {
+        ESP_LOGW(TAG, "🛑 COMMAND_STOP received");
         xEventGroupClearBits(this_speaker->event_group_, SpeakerEventGroupBits::COMMAND_STOP);
         break;
       }
       if (event_group_bits & SpeakerEventGroupBits::COMMAND_STOP_GRACEFULLY) {
+        ESP_LOGW(TAG, "🧘 COMMAND_STOP_GRACEFULLY received");
         xEventGroupClearBits(this_speaker->event_group_, SpeakerEventGroupBits::COMMAND_STOP_GRACEFULLY);
         stop_gracefully = true;
       }
 
       if (this_speaker->audio_stream_info_ != audio_stream_info) {
-        // Audio stream info changed, stop the speaker task so it will restart with the proper settings.
+        ESP_LOGW(TAG, "⚠️ AudioStreamInfo changed, restarting task");
         break;
       }
 
       i2s_event_t i2s_event;
       while (xQueueReceive(this_speaker->i2s_event_queue_, &i2s_event, 0)) {
         if (i2s_event.type == I2S_EVENT_TX_Q_OVF) {
+          ESP_LOGW(TAG, "💣 TX DMA underflow detected");
           tx_dma_underflow = true;
         }
       }
 
       if (this_speaker->pause_state_) {
-        // Pause state is accessed atomically, so thread safe
-        // Delay so the task can yields, then skip transferring audio data
+        ESP_LOGI(TAG, "⏸️ Speaker is paused");
         delay(TASK_DELAY_MS);
         continue;
       }
 
-      size_t bytes_read = this_speaker->audio_ring_buffer_->read((void *) this_speaker->data_buffer_, data_buffer_size,
-                                                                 pdMS_TO_TICKS(TASK_DELAY_MS));
-      
-      
-      ESP_LOGI(TAG, "Bytes read from ring buffer: %u", bytes_read);
-      ESP_LOGI(TAG, "First 8 bytes: %02X %02X %02X %02X %02X %02X %02X %02X",
-                this_speaker->data_buffer_[0], this_speaker->data_buffer_[1],
-                this_speaker->data_buffer_[2], this_speaker->data_buffer_[3],
-                this_speaker->data_buffer_[4], this_speaker->data_buffer_[5],
-                this_speaker->data_buffer_[6], this_speaker->data_buffer_[7]);
-                                                                 
-      if (bytes_read > 0) {
-        ESP_LOGI(TAG, "🔊 play() first 4 bytes: %02X %02X %02X %02X",
-              this_speaker->data_buffer_[0], this_speaker->data_buffer_[1],
-              this_speaker->data_buffer_[2], this_speaker->data_buffer_[3]);
-        ESP_LOGI(TAG, "🎯 I2S wrote %u bytes", (unsigned) bytes_written);
+      size_t bytes_read = this_speaker->audio_ring_buffer_->read(
+        (void *) this_speaker->data_buffer_, data_buffer_size,
+        pdMS_TO_TICKS(TASK_DELAY_MS));
 
-        if ((audio_stream_info.get_bits_per_sample() == 16) && (this_speaker->q15_volume_factor_ < INT16_MAX)) {
-          // Scale samples by the volume factor in place
-          q15_multiplication((int16_t *) this_speaker->data_buffer_, (int16_t *) this_speaker->data_buffer_,
-                             bytes_read / sizeof(int16_t), this_speaker->q15_volume_factor_);
+      ESP_LOGD(TAG, "📥 Read %u bytes from ring buffer", bytes_read);
+      if (bytes_read > 0) {
+        ESP_LOGV(TAG, "📦 First 8 bytes: %02X %02X %02X %02X %02X %02X %02X %02X",
+                 this_speaker->data_buffer_[0], this_speaker->data_buffer_[1],
+                 this_speaker->data_buffer_[2], this_speaker->data_buffer_[3],
+                 this_speaker->data_buffer_[4], this_speaker->data_buffer_[5],
+                 this_speaker->data_buffer_[6], this_speaker->data_buffer_[7]);
+
+        if ((audio_stream_info.get_bits_per_sample() == 16) &&
+            (this_speaker->q15_volume_factor_ < INT16_MAX)) {
+          q15_multiplication((int16_t *) this_speaker->data_buffer_,
+                             (int16_t *) this_speaker->data_buffer_,
+                             bytes_read / sizeof(int16_t),
+                             this_speaker->q15_volume_factor_);
         }
 
-        // Write the audio data to a single DMA buffer at a time to reduce latency for the audio duration played
-        // callback.
         const uint32_t batches = (bytes_read + single_dma_buffer_input_size - 1) / single_dma_buffer_input_size;
-
         for (uint32_t i = 0; i < batches; ++i) {
           size_t bytes_written = 0;
           size_t bytes_to_write = std::min(single_dma_buffer_input_size, bytes_read);
 
+          esp_err_t err = ESP_FAIL;
           if (audio_stream_info.get_bits_per_sample() == (uint8_t) this_speaker->bits_per_sample_) {
-            i2s_write(this_speaker->parent_->get_port(), this_speaker->data_buffer_ + i * single_dma_buffer_input_size,
-                      bytes_to_write, &bytes_written, pdMS_TO_TICKS(DMA_BUFFER_DURATION_MS * 5));
+            err = i2s_write(this_speaker->parent_->get_port(),
+                            this_speaker->data_buffer_ + i * single_dma_buffer_input_size,
+                            bytes_to_write, &bytes_written,
+                            pdMS_TO_TICKS(DMA_BUFFER_DURATION_MS * 5));
           } else if (audio_stream_info.get_bits_per_sample() < (uint8_t) this_speaker->bits_per_sample_) {
-            i2s_write_expand(this_speaker->parent_->get_port(),
-                             this_speaker->data_buffer_ + i * single_dma_buffer_input_size, bytes_to_write,
-                             audio_stream_info.get_bits_per_sample(), this_speaker->bits_per_sample_, &bytes_written,
-                             pdMS_TO_TICKS(DMA_BUFFER_DURATION_MS * 5));
+            err = i2s_write_expand(this_speaker->parent_->get_port(),
+                                   this_speaker->data_buffer_ + i * single_dma_buffer_input_size,
+                                   bytes_to_write,
+                                   audio_stream_info.get_bits_per_sample(),
+                                   this_speaker->bits_per_sample_,
+                                   &bytes_written,
+                                   pdMS_TO_TICKS(DMA_BUFFER_DURATION_MS * 5));
           }
 
-          uint32_t write_timestamp = micros();
-
-          if (bytes_written != bytes_to_write) {
-            xEventGroupSetBits(this_speaker->event_group_, SpeakerEventGroupBits::ERR_ESP_INVALID_SIZE);
-          }
+          ESP_LOGD(TAG, "📤 Wrote %u / %u bytes to I2S (err=%s)", (unsigned) bytes_written,
+                   (unsigned) bytes_to_write, esp_err_to_name(err));
 
           bytes_read -= bytes_written;
 
@@ -368,30 +371,34 @@ void I2SAudioSpeaker::speaker_task(void *params) {
 
           uint32_t pending_frames =
               audio_stream_info.bytes_to_frames(bytes_read + this_speaker->audio_ring_buffer_->available());
-          const uint32_t pending_ms = audio_stream_info.frames_to_milliseconds_with_remainder(&pending_frames);
+          const uint32_t pending_ms =
+              audio_stream_info.frames_to_milliseconds_with_remainder(&pending_frames);
 
-          this_speaker->audio_output_callback_(new_playback_ms, remainder_us, pending_ms, write_timestamp);
+          this_speaker->audio_output_callback_(new_playback_ms, remainder_us, pending_ms, micros());
 
           tx_dma_underflow = false;
           last_data_received_time = millis();
         }
       } else {
-        // No data received
         if (stop_gracefully && tx_dma_underflow) {
+          ESP_LOGI(TAG, "🛑 Graceful stop reached with TX underflow, breaking");
           break;
         }
       }
     }
 
+    ESP_LOGI(TAG, "🧹 Uninstalling I2S driver, cleanup starting");
     xEventGroupSetBits(this_speaker->event_group_, SpeakerEventGroupBits::STATE_STOPPING);
-
     i2s_driver_uninstall(this_speaker->parent_->get_port());
-
     this_speaker->parent_->unlock();
+  } else {
+    ESP_LOGE(TAG, "❗ I2S driver start failed. Skipping playback loop.");
   }
 
+  ESP_LOGW(TAG, "⚰️ speaker_task exiting...");
   this_speaker->delete_task_(data_buffer_size);
 }
+
 
 void I2SAudioSpeaker::start() {
   if (!this->is_ready() || this->is_failed() || this->status_has_error())
