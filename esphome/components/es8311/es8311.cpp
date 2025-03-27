@@ -49,6 +49,16 @@ void ES8311::setup() {
   ES8311_ERROR_FAILED(this->write_byte(ES8311_REG37_DAC, 0x08));
   // Power On
   ES8311_ERROR_FAILED(this->write_byte(ES8311_REG00_RESET, 0x80));
+
+  ESP_LOGI(TAG, "🚀 [ES8311] Register dump after setup:");
+  for (uint8_t reg = 0x00; reg <= 0x45; reg++) {
+    uint8_t val = 0;
+    if (this->read_byte(reg, &val)) {
+      ESP_LOGI(TAG, "🔧 REG[0x%02X] = 0x%02X", reg, val);
+    } else {
+      ESP_LOGW(TAG, "❌ Failed to read REG[0x%02X]", reg);
+    }
+  }
 }
 
 void ES8311::dump_config() {
