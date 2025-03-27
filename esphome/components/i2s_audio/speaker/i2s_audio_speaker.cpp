@@ -195,6 +195,8 @@ void I2SAudioSpeaker::set_mute_state(bool mute_state) {
 }
 
 size_t I2SAudioSpeaker::play(const uint8_t *data, size_t length, TickType_t ticks_to_wait) {
+  ESP_LOGD(TAG, "play() called with %u bytes", length);
+
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Cannot play audio, speaker failed to setup");
     return 0;
@@ -311,7 +313,15 @@ void I2SAudioSpeaker::speaker_task(void *params) {
 
       size_t bytes_read = this_speaker->audio_ring_buffer_->read((void *) this_speaker->data_buffer_, data_buffer_size,
                                                                  pdMS_TO_TICKS(TASK_DELAY_MS));
-
+      
+      
+      ESP_LOGVV(TAG, "Bytes read from ring buffer: %u", bytes_read);
+      ESP_LOGVV(TAG, "First 8 bytes: %02X %02X %02X %02X %02X %02X %02X %02X",
+                this_speaker->data_buffer_[0], this_speaker->data_buffer_[1],
+                this_speaker->data_buffer_[2], this_speaker->data_buffer_[3],
+                this_speaker->data_buffer_[4], this_speaker->data_buffer_[5],
+                this_speaker->data_buffer_[6], this_speaker->data_buffer_[7]);
+                                                                 
       if (bytes_read > 0) {
         if ((audio_stream_info.get_bits_per_sample() == 16) && (this_speaker->q15_volume_factor_ < INT16_MAX)) {
           // Scale samples by the volume factor in place
@@ -518,6 +528,15 @@ esp_err_t I2SAudioSpeaker::start_i2s_driver_(audio::AudioStreamInfo &audio_strea
     config.mode = (i2s_mode_t) (config.mode | I2S_MODE_DAC_BUILT_IN);
   }
 #endif
+
+  ESP_LOGI(TAG, "I2S Config:");
+  ESP_LOGI(TAG, "  sample_rate: %u", config.sample_rate);
+  ESP_LOGI(TAG, "  bits_per_sample: %d", config.bits_per_sample);
+  ESP_LOGI(TAG, "  channel_format: %d", config.channel_format);
+  ESP_LOGI(TAG, "  communication_format: %d", config.communication_format);
+  ESP_LOGI(TAG, "  dma_buf_count: %d", config.dma_buf_count);
+  ESP_LOGI(TAG, "  dma_buf_len: %d", config.dma_buf_len);
+  ESP_LOGI(TAG, "  use_apll: %d", config.use_apll);
 
   esp_err_t err =
       i2s_driver_install(this->parent_->get_port(), &config, I2S_EVENT_QUEUE_COUNT, &this->i2s_event_queue_);
