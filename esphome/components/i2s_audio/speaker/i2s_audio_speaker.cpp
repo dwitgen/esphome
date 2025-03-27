@@ -196,6 +196,9 @@ void I2SAudioSpeaker::set_mute_state(bool mute_state) {
 
 size_t I2SAudioSpeaker::play(const uint8_t *data, size_t length, TickType_t ticks_to_wait) {
   ESP_LOGD(TAG, "play() called with %u bytes", length);
+  ESP_LOGI(TAG, "📝 play() writing %u bytes to ring buffer", length);
+  auto written = this->audio_ring_buffer_->write(data, length, 0);
+  ESP_LOGI(TAG, "📦 ring buffer accepted %u bytes", written);
 
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Cannot play audio, speaker failed to setup");
