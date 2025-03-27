@@ -315,14 +315,19 @@ void I2SAudioSpeaker::speaker_task(void *params) {
                                                                  pdMS_TO_TICKS(TASK_DELAY_MS));
       
       
-      ESP_LOGVV(TAG, "Bytes read from ring buffer: %u", bytes_read);
-      ESP_LOGVV(TAG, "First 8 bytes: %02X %02X %02X %02X %02X %02X %02X %02X",
+      ESP_LOGI(TAG, "Bytes read from ring buffer: %u", bytes_read);
+      ESP_LOGI(TAG, "First 8 bytes: %02X %02X %02X %02X %02X %02X %02X %02X",
                 this_speaker->data_buffer_[0], this_speaker->data_buffer_[1],
                 this_speaker->data_buffer_[2], this_speaker->data_buffer_[3],
                 this_speaker->data_buffer_[4], this_speaker->data_buffer_[5],
                 this_speaker->data_buffer_[6], this_speaker->data_buffer_[7]);
                                                                  
       if (bytes_read > 0) {
+        ESP_LOGI(TAG, "🔊 play() first 4 bytes: %02X %02X %02X %02X",
+              this_speaker->data_buffer_[0], this_speaker->data_buffer_[1],
+              this_speaker->data_buffer_[2], this_speaker->data_buffer_[3]);
+        ESP_LOGI(TAG, "🎯 I2S wrote %u bytes", (unsigned) bytes_written);
+
         if ((audio_stream_info.get_bits_per_sample() == 16) && (this_speaker->q15_volume_factor_ < INT16_MAX)) {
           // Scale samples by the volume factor in place
           q15_multiplication((int16_t *) this_speaker->data_buffer_, (int16_t *) this_speaker->data_buffer_,
