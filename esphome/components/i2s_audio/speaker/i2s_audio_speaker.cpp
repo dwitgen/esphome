@@ -239,7 +239,7 @@ bool I2SAudioSpeaker::has_buffered_data() const {
 }
 
 void I2SAudioSpeaker::speaker_task(void *params) {
-  I2SAudioSpeaker *this_speaker = (I2SAudioSpeaker *) params;
+  I2SAudioSpeaker *this_speaker = static_cast<I2SAudioSpeaker *>(params);
   ESP_LOGI(TAG, "🚀 speaker_task started");
 
   this_speaker->task_created_ = true;
@@ -259,13 +259,12 @@ void I2SAudioSpeaker::speaker_task(void *params) {
     return;
   }
 
-  if (this_speaker-pa_pin_.has_value()) {
+  if (this_speaker->pa_pin_.has_value()) {
     this_speaker->pa_pin_.value()->setup();
     this_speaker->pa_pin_.value()->digital_write(this_speaker->pa_active_high_);
-    ESP_LOGI(TAG, "🔊 PA Control pin set to %s", this->pa_active_high_ ? "HIGH" : "LOW");
-
+    ESP_LOGI(TAG, "🔊 PA Control pin set to %s", this_speaker->pa_active_high_ ? "HIGH" : "LOW");
   } else {
-    ESP_LOGW(TAG, "❌ PA Control pin not set. Speaker may not be enabled.");
+    ESP_LOGW(TAG, "⚠️ PA Control pin not set. Speaker may not be enabled.");
   }
 
   ESP_LOGI(TAG, "✅ Setting STATE_STARTING");
@@ -288,7 +287,7 @@ void I2SAudioSpeaker::speaker_task(void *params) {
   }
 
   ESP_LOGI(TAG, "🔌 Starting I2S driver...");
-  if (!this_speaker->send_esp_err_to_event_group_(this_speaker->start_i2s_driver_(audio_stream_info))) {
+  if (this_speaker->send_esp_err_to_event_group_(this_speaker->start_i2s_driver_(audio_stream_info))) {
     ESP_LOGI(TAG, "🎙️ I2S driver started successfully");
     xEventGroupSetBits(this_speaker->event_group_, SpeakerEventGroupBits::STATE_RUNNING);
 
@@ -300,51 +299,37 @@ void I2SAudioSpeaker::speaker_task(void *params) {
 
     while (this_speaker->pause_state_ || !this_speaker->timeout_.has_value() ||
            (millis() - last_data_received_time) <= this_speaker->timeout_.value()) {
-      ESP_LOGVV(TAG, "🔄 Looping...");
 
       event_group_bits = xEventGroupGetBits(this_speaker->event_group_);
       if (event_group_bits & SpeakerEventGroupBits::COMMAND_STOP) {
-        ESP_LOGW(TAG, "🛑 COMMAND_STOP received");
         xEventGroupClearBits(this_speaker->event_group_, SpeakerEventGroupBits::COMMAND_STOP);
         break;
       }
       if (event_group_bits & SpeakerEventGroupBits::COMMAND_STOP_GRACEFULLY) {
-        ESP_LOGW(TAG, "🧘 COMMAND_STOP_GRACEFULLY received");
         xEventGroupClearBits(this_speaker->event_group_, SpeakerEventGroupBits::COMMAND_STOP_GRACEFULLY);
         stop_gracefully = true;
       }
 
       if (this_speaker->audio_stream_info_ != audio_stream_info) {
-        ESP_LOGW(TAG, "⚠️ AudioStreamInfo changed, restarting task");
         break;
       }
 
       i2s_event_t i2s_event;
       while (xQueueReceive(this_speaker->i2s_event_queue_, &i2s_event, 0)) {
         if (i2s_event.type == I2S_EVENT_TX_Q_OVF) {
-          ESP_LOGW(TAG, "💣 TX DMA underflow detected");
           tx_dma_underflow = true;
         }
       }
 
       if (this_speaker->pause_state_) {
-        ESP_LOGI(TAG, "⏸️ Speaker is paused");
         delay(TASK_DELAY_MS);
         continue;
       }
 
       size_t bytes_read = this_speaker->audio_ring_buffer_->read(
-        (void *) this_speaker->data_buffer_, data_buffer_size,
-        pdMS_TO_TICKS(TASK_DELAY_MS));
+          (void *) this_speaker->data_buffer_, data_buffer_size, pdMS_TO_TICKS(TASK_DELAY_MS));
 
-      ESP_LOGD(TAG, "📥 Read %u bytes from ring buffer", bytes_read);
       if (bytes_read > 0) {
-        ESP_LOGV(TAG, "📦 First 8 bytes: %02X %02X %02X %02X %02X %02X %02X %02X",
-                 this_speaker->data_buffer_[0], this_speaker->data_buffer_[1],
-                 this_speaker->data_buffer_[2], this_speaker->data_buffer_[3],
-                 this_speaker->data_buffer_[4], this_speaker->data_buffer_[5],
-                 this_speaker->data_buffer_[6], this_speaker->data_buffer_[7]);
-
         if ((audio_stream_info.get_bits_per_sample() == 16) &&
             (this_speaker->q15_volume_factor_ < INT16_MAX)) {
           q15_multiplication((int16_t *) this_speaker->data_buffer_,
@@ -364,7 +349,7 @@ void I2SAudioSpeaker::speaker_task(void *params) {
                             this_speaker->data_buffer_ + i * single_dma_buffer_input_size,
                             bytes_to_write, &bytes_written,
                             pdMS_TO_TICKS(DMA_BUFFER_DURATION_MS * 5));
-          } else if (audio_stream_info.get_bits_per_sample() < (uint8_t) this_speaker->bits_per_sample_) {
+          } else {
             err = i2s_write_expand(this_speaker->parent_->get_port(),
                                    this_speaker->data_buffer_ + i * single_dma_buffer_input_size,
                                    bytes_to_write,
@@ -374,12 +359,9 @@ void I2SAudioSpeaker::speaker_task(void *params) {
                                    pdMS_TO_TICKS(DMA_BUFFER_DURATION_MS * 5));
           }
 
-          ESP_LOGD(TAG, "📤 Wrote %u / %u bytes to I2S (err=%s)", (unsigned) bytes_written,
-                   (unsigned) bytes_to_write, esp_err_to_name(err));
-
           bytes_read -= bytes_written;
-
           this_speaker->accumulated_frames_written_ += audio_stream_info.bytes_to_frames(bytes_written);
+
           const uint32_t new_playback_ms =
               audio_stream_info.frames_to_milliseconds_with_remainder(&this_speaker->accumulated_frames_written_);
           const uint32_t remainder_us =
@@ -397,32 +379,28 @@ void I2SAudioSpeaker::speaker_task(void *params) {
         }
       } else {
         if (stop_gracefully && tx_dma_underflow) {
-          ESP_LOGI(TAG, "🛑 Graceful stop reached with TX underflow, breaking");
           break;
         }
       }
     }
 
-    ESP_LOGI(TAG, "🧹 Uninstalling I2S driver, cleanup starting");
     xEventGroupSetBits(this_speaker->event_group_, SpeakerEventGroupBits::STATE_STOPPING);
     i2s_driver_uninstall(this_speaker->parent_->get_port());
-    f (this_speaker-pa_pin_.has_value()) {
-      this_speaker->pa_pin_.value()->setup();
+
+    if (this_speaker->pa_pin_.has_value()) {
       this_speaker->pa_pin_.value()->digital_write(!this_speaker->pa_active_high_);
-      ESP_LOGI(TAG, "🔊 PA Control pin set to %s", this->pa_active_high_ ? "HIGH" : "LOW");
-  
-    } else {
-      ESP_LOGW(TAG, "❌ PA Control pin not set. Speaker may not be enabled.");
+      ESP_LOGI(TAG, "🔇 PA pin set to %s", this_speaker->pa_active_high_ ? "LOW" : "HIGH");
     }
-  
+
     this_speaker->parent_->unlock();
   } else {
     ESP_LOGE(TAG, "❗ I2S driver start failed. Skipping playback loop.");
   }
 
-  ESP_LOGW(TAG, "⚰️ speaker_task exiting...");
   this_speaker->delete_task_(data_buffer_size);
+  ESP_LOGW(TAG, "⚰️ speaker_task exiting...");
 }
+
 
 
 void I2SAudioSpeaker::start() {
