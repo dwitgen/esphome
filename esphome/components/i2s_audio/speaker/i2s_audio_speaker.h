@@ -43,6 +43,15 @@ class I2SAudioSpeaker : public I2SAudioOut, public speaker::Speaker, public Comp
   void set_pause_state(bool pause_state) override { this->pause_state_ = pause_state; }
   bool get_pause_state() const override { return this->pause_state_; }
 
+  // PA Cpntrol 
+  optional<GPIOin *> pa_pin_;
+  bool pa_active_high_ = true;
+
+  void set_pa_pin(GPIOin *pa_pin, bool active_high) {
+    this->pa_pin_ = pa_pin;
+    this->pa_active_high_ = active_high;
+  } 
+
   /// @brief Plays the provided audio data.
   /// Starts the speaker task, if necessary. Writes the audio data to the ring buffer.
   /// @param data Audio data in the format set by the parent speaker classes ``set_audio_stream_info`` method.
