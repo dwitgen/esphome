@@ -255,11 +255,11 @@ void I2SAudioSpeaker::speaker_task(void *params) {
     return;
   }
 
-  if (this-pa_pin_.has_value()) {
-    this->pa_pin_.value()->setup();
-    this->pa_pin_.value()->digital_write(this->pa_active_high_);
-    ESP_LOGI(TAG, "🔊 PA Control pin set to %s", this->pa_active_high_ ? "HIGH" : "LOW");
-  }
+  
+  this->pa_pin_.setup();
+  this->pa_pin_.digital_write(this->pa_active_high_);
+  ESP_LOGI(TAG, "🔊 PA Control pin set to %s", this->pa_active_high_ ? "HIGH" : "LOW");
+
 
 
   ESP_LOGI(TAG, "✅ Setting STATE_STARTING");
@@ -400,11 +400,9 @@ void I2SAudioSpeaker::speaker_task(void *params) {
     ESP_LOGI(TAG, "🧹 Uninstalling I2S driver, cleanup starting");
     xEventGroupSetBits(this_speaker->event_group_, SpeakerEventGroupBits::STATE_STOPPING);
     i2s_driver_uninstall(this_speaker->parent_->get_port());
-    if (this-pa_pin_.has_value()) {
-      this->pa_pin_.value()->setup();
-      this->pa_pin_.value()->digital_write(!this->pa_active_high_);
-      ESP_LOGI(TAG, "🔇 PA pin set to %s", this->pa_active_high_ ? "HIGH" : "LOW");
-    }
+    this->pa_pin_.setup();
+    this->pa_pin_.digital_write(this->pa_active_high_);
+    ESP_LOGI(TAG, "🔇 PA pin set to %s", this->pa_active_high_ ? "HIGH" : "LOW");
   
     this_speaker->parent_->unlock();
   } else {

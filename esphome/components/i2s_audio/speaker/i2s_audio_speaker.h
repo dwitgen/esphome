@@ -44,7 +44,9 @@ class I2SAudioSpeaker : public I2SAudioOut, public speaker::Speaker, public Comp
   bool get_pause_state() const override { return this->pause_state_; }
 
   // PA Cpntrol 
-  optional<GPIOin *> pa_pin_;
+  //optional<GPIOin *> pa_pin_;
+  GPIOPin pa_pin_in = GPIOPin(38, OUTPUT);
+  GPIOin pa_pin_ = GPIOin(&pa_pin_in);
   bool pa_active_high_ = true;
 
   void set_pa_pin(GPIOin *pa_pin, bool active_high) {
