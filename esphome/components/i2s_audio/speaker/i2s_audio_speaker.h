@@ -45,8 +45,7 @@ class I2SAudioSpeaker : public I2SAudioOut, public speaker::Speaker, public Comp
 
   // PA Cpntrol 
   //optional<GPIOin *> pa_pin_;
-  GPIOPin pa_pin_in = GPIOPin(38, OUTPUT);
-  GPIOin pa_pin_ = GPIOin(&pa_pin_in);
+  GPIOPin pa_pin_ = GPIOPin(38, OUTPUT);
   bool pa_active_high_ = true;
 
   void set_pa_pin(GPIOin *pa_pin, bool active_high) {
